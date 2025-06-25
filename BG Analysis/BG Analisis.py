@@ -12,7 +12,7 @@ from scipy.optimize import curve_fit
 
 #%% 
 
-dataset_title='1 ms'
+dataset_title='1000 ms'
 
 
 def gaussian(x, mu, sigma):
@@ -119,8 +119,8 @@ plt.tick_params(axis='both', which='major', labelsize=18)
 plt.legend(fontsize=15)
 #plt.xlim(20,50)
 
-plt.savefig(f'{dataset_title} STD Histogram.jpg', format='jpg',
-            bbox_inches='tight')
+# plt.savefig(f'{dataset_title} STD Histogram.jpg', format='jpg',
+#             bbox_inches='tight')
 
 plt.show()
 
