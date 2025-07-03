@@ -10,30 +10,24 @@ import glob
 
 # BACKGROUND
 
-list_filenames= ['Continuous_measurement']
+list_filenames= ['Wknd_Measurement']
 
 for filename in list_filenames: 
     names = ['Time','Nitrogene', 'Oxygen', 'Water', 'Argon', 'CF4', 'None']
-    data=pd.read_csv(rf'C:\Users\genar\VSC code\CERN-Summer\{filename}.txt', 
+    data=pd.read_csv(rf'C:\Users\genar\VSC code\CERN-Summer\RGA\{filename}.txt', 
                     sep=',', skiprows=27, 
                     header=None, engine='python',
                     names=names)
 
     time = data['Time']
-    Argon = data['Argon']*1.33322
-    Nitrogene = data ['Nitrogene']*1.33322
-    CF4 = data['CF4']*1.33322
-    Water = data['Water']*1.33322
-    total_pressure = (data['Argon'] + data['CF4'])*1.33322
+    Element = ['Nitrogene', 'Oxygen', 'Water', 'Argon', 'CF4']
+
+    total_pressure = data['Argon'] + data['CF4']
 
     plt.figure(figsize=(12,8))
 
-    plt.plot(time, total_pressure, label='total')
-    plt.plot(time, Argon, label = 'Argon')
-    plt.plot(time, CF4, label= 'CF4')
-
-    # for i in Element: 
-    #     plt.plot(time, data[i]*1.33322, label = i, linewidth=2.5)
+    for i in Element: 
+        plt.plot(time, data[i]*1.33322, label = i, linewidth=2.5)
 
     plt.title(filename, fontsize = 20)
     plt.legend(fontsize= 15)
@@ -42,8 +36,8 @@ for filename in list_filenames:
     plt.tick_params(axis='both', labelsize=15)
     plt.grid()
 
-    plt.ylim(0,6e-5)
-    plt.xlim(3500,)
+    plt.ylim()
+    plt.xlim(0, 6000)
 
     # plt.savefig(f'{filename}.jpg', format = 'jpg', dpi = 300,
     #             bbox_inches='tight')
