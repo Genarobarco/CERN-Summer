@@ -19,6 +19,10 @@ def landau(x, mpv, eta, A):
 
 def Reader(Rutas):
 
+  # Lo que hace este codigo es tomar una ruta, la misma en teoria posee
+  # varios archivos de BG. Al final toma el valor medio por canal y la
+  # desviacion estandar por canal.
+
   Count_List=[]
   Lambda_List=[]
   Indice= 0
@@ -54,7 +58,7 @@ def Reader(Rutas):
 
   channels=Lambda_List[0]
 
-  return mean_per_channel, std_per_channel, channels
+  return mean_per_channel, std_per_channel, Indice
 
 def Histo(list, distribution, p0, bins_value, Label_value, density = True,
     color = 'mediumorchid', color_plot = 'crimson', alpha = 0.7, edgecolor = 'black',      # Legend label
@@ -108,15 +112,3 @@ def Histo(list, distribution, p0, bins_value, Label_value, density = True,
         plt.xlim(x_min,x_max)
 
     plt.show()
-
-Rutas=glob(r'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\CF4\1\1_bar\0V\test_pure\DataBG\*.txt')
-
-mean_per_channel = Reader(Rutas)[0]
-std_per_channel = Reader(Rutas)[1]
-
-Histo(mean_per_channel, landau, [4000,2000,1], 200, 
-      'Counts BG', color = 'blue', lim = True, 
-      x_min= 3000, x_max=10000)
-
-Histo(std_per_channel, gaussian, [50,20,1], 1000, 'STD BG', 
-      color = 'orange', lim = True, x_min= -10, x_max=120)
