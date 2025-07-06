@@ -17,7 +17,7 @@ def landau(x, mpv, eta, A):
     xi = (x - mpv) / eta
     return A * np.exp(-0.5 * (xi + np.exp(-xi)))
 
-def Reader(Rutas):
+def Mean_BG(Rutas):
 
   # Lo que hace este codigo es tomar una ruta, la misma en teoria posee
   # varios archivos de BG. Al final toma el valor medio por canal y la
@@ -59,7 +59,8 @@ def Reader(Rutas):
 
 def Histo(list, distribution, p0, bins_value, Label_value, density = True,
     color = 'mediumorchid', color_plot = 'crimson', alpha = 0.7, edgecolor = 'black',      # Legend label
-    histtype = 'bar',lim = False, x_min = 0, x_max = 1000, plot = True):
+    histtype = 'bar',lim = False, x_min = 0, x_max = 1000, plot = True, 
+    save_name='Poner_nombre_Histos'):
 
   min_value=min(list)
   max_value=max(list)
@@ -103,14 +104,17 @@ def Histo(list, distribution, p0, bins_value, Label_value, density = True,
   plt.xlabel('Photon count', fontsize= 18)
   plt.ylabel('Frecency', fontsize= 18)
   plt.tick_params(axis='both', which='major', labelsize=18)
+  plt.title(save_name)
   plt.legend(fontsize=15)
   
   if lim:
       plt.xlim(x_min,x_max)
 
   if plot:
+
+    plt.savefig(f'{save_name}.jpg', format='jpg', bbox_inches='tight')
     plt.show()
-  
+
   else:
     plt.close()
 
@@ -126,7 +130,7 @@ def BG_Tender(Rutas, label_tender, p0=[6000,100,1],
 
   for r in Rutas:
 
-    df = Reader([r])
+    df = Mean_BG([r])
 
     value_per_channel = df['Mean_Counts'] # Aca dice mean pero en verdad es solo 1 dato el que esta contando
                                         # ya que solo entra 1 archivo por interacion
@@ -167,4 +171,91 @@ def BG_Tender(Rutas, label_tender, p0=[6000,100,1],
 
   plt.savefig(f'{label_tender}_BGMeanBehaviour.jpg', format='jpg', bbox_inches='tight' )
 
-  plt.show
+  plt.show()
+
+def RP(base_path):
+  """
+  Returns the full path to the first file in the 'Results' subfolder 
+  of `base_path` that ends with '-calibratedResults.csv'.
+
+  Parameters:
+      base_path (str): Path to the folder containing the 'Results' subfolder.
+
+  Returns:
+      str: Full path to the matching file, or None if not found.
+  """
+  results_path = os.path.join(base_path, 'Results')
+  matched_files = glob(os.path.join(results_path, '*-calibratedResults.csv'))
+
+  if matched_files:
+      return matched_files[0]
+  else:
+      return None
+    
+#%%
+# -------- Path ---------
+
+Mother_path =r'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro'
+Parameters=r'\N2\100\1_bar\40kV40mA'
+Folder_name='30s_gena'
+
+Ruta=f'{Mother_path}\{Parameters}\{Folder_name}'
+Ruta_BG=glob(f'{Ruta}\DataBG\*.txt')
+Ruta_Results = RP(Ruta)
+
+name = 'N2_100_1bar_30s'
+#%%
+
+# ----- Mean average for all files ---------
+df = Mean_BG(Ruta_BG)
+
+Lambda = df['Lambda']
+Mean_Counts = df['Mean_Counts']
+Std_Counts = df['Std_Counts']
+
+plt.figure(figsize=(12,8))
+plt.plot(Lambda, Mean_Counts, label=f'Mean BGSpectrum - {name}',
+         color='darkviolet')
+plt.xlabel('Wavelength (nm)', fontsize=15)
+plt.ylabel('Photon Count (A.U.)', fontsize=15)
+plt.legend(loc='upper right', fontsize=15)
+plt.tick_params(axis='both', which='major', labelsize=18)
+plt.savefig(f'MHist_{name}.jpg', format='jpg', bbox_inches='tight')
+plt.show()
+
+Histo(Std_Counts, gaussian, [60,15,10], 1000, 'Mean Counts all BG', 
+      lim=True, x_min=0, x_max=150, save_name=f'Std_{name}')
+
+Histo(Mean_Counts, landau, [8000,4000,10], 100, 'Mean Counts all BG',
+      color='Navy', lim=True, x_min=2000, x_max=20000, 
+      save_name=f'Mean_{name}')
+
+
+#%%
+# -------- BG behaviour --------
+
+BG_Tender(Ruta_BG, label_tender = 'N2_100_1b_30s', p0=[6000,100,1], 
+              bins_histo=500, distribution = landau,
+              Label_histo = 'Counts_BG', lim = True, 
+              x_min= 2000, x_max=14000, plot_histos= False,
+              color_tender = 'crimson')
+
+
+# ------- Calibrated Spectrum ----------
+
+df_1 = pd.read_csv(Ruta_Results)
+
+wavelength_gena = df_1['wavelength']
+intensity_gena = df_1['intensity']
+
+intensity_norm_gena = intensity_gena
+
+plt.plot(wavelength_gena, intensity_norm_gena / max(intensity_norm_gena) , 
+         label='try2 - 5/30 Señal - 10/30 BG', color='red')
+plt.legend()
+plt.xlabel('Wavelenght')
+plt.ylabel('Normalize Counts (A.U.)')
+
+# plt.savefig('try3_N2_100_1bar_5-30_10-30.jpg', format='jpg', bbox_inches='tight' )
+
+plt.show()
