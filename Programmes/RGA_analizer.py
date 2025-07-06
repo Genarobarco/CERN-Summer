@@ -8,10 +8,10 @@ filename = 'HeatingNight_WaterSearch'
 
 Ruta = rf'C:\Users\genar\VSC code\CERN-Summer\RGA\{filename}.txt'
 
-f_hour=[00,00,00]
-s_hour=[18,00,00]
+f_hour=[16,11,00]
+s_hour=[16,14,00]
 
-number_ticks=10
+number_ticks=4000
 
 def RGA_spec(Ruta, f_hour, s_hour, number_ticks, 
              save=False, save_name='RGa_nombre'):
@@ -69,4 +69,4 @@ def RGA_spec(Ruta, f_hour, s_hour, number_ticks,
         plt.show()
 
 RGA_spec(Ruta, f_hour, s_hour, number_ticks, 
-         save=True, save_name=filename)
+         save=True, save_name='2_V4-V8_Manuver_Open_V4')

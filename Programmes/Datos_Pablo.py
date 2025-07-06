@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-path_datos = r"C:\Users\genar\Documents\CERN Summer 2025\Spectrum\Dataframe_Spectra_ArCF4.pickle"
+path_datos = r"C:\Users\genar\Documents\CERN Summer 2025\Spectrum\Dataframe_Spectra_ArCF4"
 datos = pd.read_pickle(path_datos)
 
 mask1 = datos['Concentrations'] == 'N2_100' 
