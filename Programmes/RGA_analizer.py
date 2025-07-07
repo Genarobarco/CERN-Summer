@@ -4,15 +4,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import timedelta
 
-filename = 'HeatingNight_WaterSearch'
-
-Ruta = rf'C:\Users\genar\VSC code\CERN-Summer\RGA\{filename}.txt'
-
-f_hour=[16,11,00]
-s_hour=[16,14,00]
-
-number_ticks=4000
-
 def RGA_spec(Ruta, f_hour, s_hour, number_ticks, 
              save=False, save_name='RGa_nombre'):
     
@@ -68,5 +59,29 @@ def RGA_spec(Ruta, f_hour, s_hour, number_ticks,
     else:
         plt.show()
 
+Mother_path = r'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\RGA'
+filename = 'wknd_Measurement'
+
+Ruta = rf"{Mother_path}\{filename}.txt"
+
+f_hour=[64,00,00]
+s_hour=[65,00,00]
+
+number_ticks=800
+
 RGA_spec(Ruta, f_hour, s_hour, number_ticks, 
-         save=True, save_name='2_V4-V8_Manuver_Open_V4')
+         save=False, save_name='2_V4-V8_Manuver_Open_V4')
+
+#%%
+
+filename = 'HeatingNight_WaterSearch'
+
+Ruta = rf"{Mother_path}\{filename}.txt"
+
+f_hour=[00,00,00]
+s_hour=[20,00,00]
+
+number_ticks=10
+
+RGA_spec(Ruta, f_hour, s_hour, number_ticks, 
+         save=False, save_name='2_V4-V8_Manuver_Open_V4')

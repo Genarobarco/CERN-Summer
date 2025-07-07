@@ -8,6 +8,7 @@ import math as math
 from glob import glob
 from scipy.stats import norm
 from scipy.optimize import curve_fit
+from scipy.special import factorial
 
 def gaussian(x, mu, sigma, A):
     return (A / (sigma * np.sqrt(2 * np.pi))) *np.exp(- (x - mu)**2 
@@ -16,6 +17,9 @@ def gaussian(x, mu, sigma, A):
 def landau(x, mpv, eta, A):
     xi = (x - mpv) / eta
     return A * np.exp(-0.5 * (xi + np.exp(-xi)))
+
+def poisson(x, lamb, A):
+    return A * (lamb**x) * np.exp(-lamb) / factorial(x)
 
 def Mean_BG(Rutas):
 
@@ -173,6 +177,7 @@ def BG_Tender(Rutas, label_tender, p0=[6000,100,1],
   # plt.show()
 
 def RP(base_path):
+
   """
   Returns the full path to the first file in the 'Results' subfolder 
   of `base_path` that ends with '-calibratedResults.csv'.
@@ -191,30 +196,30 @@ def RP(base_path):
   else:
       return None
 
+
 # -------- Path ---------
 
 Mother_path =r'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro'
 Parameters=r'\N2\100\1_bar\40kV40mA'
-Folder_name='60s_gena'
+Folder_name='Alternate'
 
 Ruta=f'{Mother_path}\{Parameters}\{Folder_name}'
+
+# Ruta = r'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\100\1_bar\40kV40mA\Raul_Tryes\0V_try'
 Ruta_BG=glob(f'{Ruta}\DataBG\*.txt')
 Ruta_Results = RP(Ruta)
 
-name = 'N2_100_1bar_60s'
-
-#%%
+name = Folder_name
 
 # -------- BG behaviour --------
 
-BG_Tender(Ruta_BG, label_tender = 'N2_100_1b_60s', p0=[6000,100,1], 
-              bins_histo=500, distribution = landau,
+BG_Tender(Ruta_BG, label_tender = f'{name}-BGtender', p0=[5000,100,1], 
+              bins_histo=400, distribution = landau,
               Label_histo = 'Counts_BG', lim = True, 
-              x_min= 2000, x_max=14000, plot_histos= False,
+              x_min= 4000, x_max=15000, plot_histos= False,
               color_tender = 'crimson')
 
 #%%
-
 # ----- Mean average for all files ---------
 df = Mean_BG(Ruta_BG)
 
@@ -223,35 +228,58 @@ Mean_Counts = df['Mean_Counts']
 Std_Counts = df['Std_Counts']
 
 plt.figure(figsize=(12,8))
-plt.plot(Lambda, Mean_Counts, label=f'Mean BGSpectrum - {name}',
-         color='darkviolet')
+plt.plot(Lambda, Std_Counts, label=f'{name}-STDperChannel', color='blue',
+             marker='o', markersize=1)
 plt.xlabel('Wavelength (nm)', fontsize=15)
 plt.ylabel('Photon Count (A.U.)', fontsize=15)
 plt.legend(loc='upper right', fontsize=15)
 plt.tick_params(axis='both', which='major', labelsize=18)
-plt.savefig(f'MHist_{name}.jpg', format='jpg', bbox_inches='tight')
+plt.ylim(0,150)
 
-Histo(Std_Counts, gaussian, [60,15,10], 1000, f'Std {name}', 
-      lim=True, x_min=0, x_max=150, save_name=f'Std_{name}')
+plt.savefig(f'{name}_STDMeanChannel.jpg', format='jpg', bbox_inches='tight')
 
-Histo(Mean_Counts, landau, [8000,4000,10], 100, f'Mean {name}',
-      color='Navy', lim=True, x_min=2000, x_max=20000, 
-      save_name=f'Mean_{name}')
+plt.figure(figsize=(12,8))
+plt.errorbar(Lambda, Mean_Counts, yerr=Std_Counts,
+             label=f'{name}-Mean BGSpectrum', color='black',
+             fmt=':.', markersize=1)
+# plt.hlines(y=0, xmin=170, xmax=900)
+plt.xlabel('Wavelength (nm)', fontsize=15)
+plt.ylabel('Photon Count (A.U.)', fontsize=15)
+plt.legend(loc='upper right', fontsize=15)
+plt.tick_params(axis='both', which='major', labelsize=18)
+plt.savefig(f'{name}_MHisto.jpg', format='jpg', bbox_inches='tight')
+
+
+#%%
+
+Histo(Std_Counts, landau, [60,15,10], 1000, f'Std {name}', 
+      lim=False, x_min=0, x_max=300, save_name=f'{name}_Std')
+
+#%%
+
+Histo(Mean_Counts, landau, [5000,1000,1], 200, f'Mean {name}',
+      color='Navy', lim=True, x_min=2000, x_max=14000, 
+      save_name=f'{name}_Mean')
 
 
 # ------- Calibrated Spectrum ----------
 
+#%%
+
 df_1 = pd.read_csv(Ruta_Results)
 
-wavelength_gena = df_1['wavelength']
-intensity_gena = df_1['intensity']
+print(df_1)
 
-intensity_norm_gena = intensity_gena
+wavelength_NoAlt = df_1['wavelength']
+intensity_NoAlt = df_1['intensity']
+
+intensity_norm_NoAlt = intensity_NoAlt
 
 plt.figure(figsize=(12,8))
-plt.plot(wavelength_gena, intensity_norm_gena / max(intensity_norm_gena) , 
-         label=f'{name} Calibrado', color='green')
-plt.legend(fontsize=15)
+
+plt.plot(wavelength_NoAlt, intensity_norm_NoAlt / max(intensity_norm_NoAlt) , 
+         label=f'No Alt', color='green')
+plt.legend(fontsize=20)
 plt.xlabel('Wavelenght', fontsize=15)
 plt.ylabel('Normalize Counts (A.U.)', fontsize=15)
 plt.tick_params(axis='both', which='major', labelsize=15)
