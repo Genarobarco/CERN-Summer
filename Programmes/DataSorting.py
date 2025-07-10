@@ -174,8 +174,6 @@ def BG_Tender(Rutas, label_tender, p0=[6000,100,1],
 
   plt.savefig(f'{label_tender}_BGMeanBehaviour.jpg', format='jpg', bbox_inches='tight' )
 
-  # plt.show()
-
 def RP(base_path):
 
   """
@@ -196,30 +194,39 @@ def RP(base_path):
   else:
       return None
 
-
 # -------- Path ---------
 
-Mother_path =r'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro'
-Parameters=r'\N2\100\1_bar\40kV40mA'
-Folder_name='Alternate'
+Ruta=r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\CF4\1\5_bar\40kV40mA\Gena_measurements\try1"
 
-Ruta=f'{Mother_path}\{Parameters}\{Folder_name}'
+Folder_elements = 'Spectra_2025_Pablo_Raul_Genaro'
+partes = Ruta.split('\\')
 
-# Ruta = r'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\100\1_bar\40kV40mA\Raul_Tryes\0V_try'
+for i, parte in enumerate(partes):
+
+  if parte == Folder_elements:
+    indicador = i
+
+Element = partes[indicador+1]
+Concentracion = partes[indicador+2]
+Presion = partes[indicador+3]
+Volt_Amp = partes[indicador+4]
+
+Ar_Concentration = 100 - int(Concentracion)
+Ar_C = str(Ar_Concentration)
+
 Ruta_BG=glob(f'{Ruta}\DataBG\*.txt')
 Ruta_Results = RP(Ruta)
 
-name = Folder_name
+name = f'Ar{Element}_{Ar_C}{Concentracion}_{Presion}'
 
 # -------- BG behaviour --------
 
-BG_Tender(Ruta_BG, label_tender = f'{name}-BGtender', p0=[5000,100,1], 
-              bins_histo=400, distribution = landau,
+BG_Tender(Ruta_BG, label_tender = f'{name}', p0=[4200,1000,1], 
+              bins_histo=200, distribution = landau,
               Label_histo = 'Counts_BG', lim = True, 
-              x_min= 4000, x_max=15000, plot_histos= False,
+              x_min= 2000, x_max=12000, plot_histos= False,
               color_tender = 'crimson')
 
-#%%
 # ----- Mean average for all files ---------
 df = Mean_BG(Ruta_BG)
 
@@ -234,7 +241,7 @@ plt.xlabel('Wavelength (nm)', fontsize=15)
 plt.ylabel('Photon Count (A.U.)', fontsize=15)
 plt.legend(loc='upper right', fontsize=15)
 plt.tick_params(axis='both', which='major', labelsize=18)
-plt.ylim(0,150)
+plt.ylim(0,200)
 
 plt.savefig(f'{name}_STDMeanChannel.jpg', format='jpg', bbox_inches='tight')
 
@@ -249,42 +256,32 @@ plt.legend(loc='upper right', fontsize=15)
 plt.tick_params(axis='both', which='major', labelsize=18)
 plt.savefig(f'{name}_MHisto.jpg', format='jpg', bbox_inches='tight')
 
+Histo(Std_Counts, landau, [60,15,10], 400, f'Std {name}', 
+      lim=True, x_min=0, x_max=300, save_name=f'{name}_Std')
 
-#%%
-
-Histo(Std_Counts, landau, [60,15,10], 1000, f'Std {name}', 
-      lim=False, x_min=0, x_max=300, save_name=f'{name}_Std')
-
-#%%
-
-Histo(Mean_Counts, landau, [5000,1000,1], 200, f'Mean {name}',
+Histo(Mean_Counts, landau, [4200,1000,1], 100, f'Mean {name}',
       color='Navy', lim=True, x_min=2000, x_max=14000, 
       save_name=f'{name}_Mean')
 
 
 # ------- Calibrated Spectrum ----------
-
-#%%
-
 df_1 = pd.read_csv(Ruta_Results)
-
-print(df_1)
 
 wavelength_NoAlt = df_1['wavelength']
 intensity_NoAlt = df_1['intensity']
 
-intensity_norm_NoAlt = intensity_NoAlt
-
 plt.figure(figsize=(12,8))
 
-plt.plot(wavelength_NoAlt, intensity_norm_NoAlt / max(intensity_norm_NoAlt) , 
-         label=f'No Alt', color='green')
+plt.plot(wavelength_NoAlt, intensity_NoAlt, 
+         label=f'{name}', color='navy', linewidth = 0.5, alpha = 1)
 plt.legend(fontsize=20)
 plt.xlabel('Wavelenght', fontsize=15)
 plt.ylabel('Normalize Counts (A.U.)', fontsize=15)
 plt.tick_params(axis='both', which='major', labelsize=15)
+plt.grid()
 
-plt.savefig(f'{name}_CalibratedResults.jpg', format='jpg', bbox_inches='tight' )
+plt.savefig(f'{name}_CalibratedResults.jpg', format='jpg', 
+            bbox_inches='tight', dpi = 300)
 
 plt.show(block=False)
 plt.pause(0.1)
