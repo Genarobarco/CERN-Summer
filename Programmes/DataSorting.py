@@ -196,7 +196,7 @@ def RP(base_path):
 
 # -------- Path ---------
 
-Ruta=r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\CF4\1\5_bar\40kV40mA\Gena_measurements\try1"
+Ruta=r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\CF4\1\5_bar\40kV40mA\Gena_measurements\try4"
 
 Folder_elements = 'Spectra_2025_Pablo_Raul_Genaro'
 partes = Ruta.split('\\')
