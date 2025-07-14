@@ -1,4 +1,5 @@
 #%%
+
 import os
 import re
 import matplotlib.pyplot as plt
@@ -196,7 +197,9 @@ def RP(base_path):
 
 # -------- Path ---------
 
-Ruta=r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\CF4\1\5_bar\40kV40mA\Gena_measurements\try4"
+Ruta_Candela = r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\CF4\1\5_bar\40kV40mA\Gena_measurements\try3\Results\try3-0.72uA-calibratedResults.csv"
+
+Ruta=r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\Ar\100\5_bar\40kV40mA\0V_try4"
 
 Folder_elements = 'Spectra_2025_Pablo_Raul_Genaro'
 partes = Ruta.split('\\')
@@ -222,7 +225,7 @@ name = f'Ar{Element}_{Ar_C}{Concentracion}_{Presion}'
 # -------- BG behaviour --------
 
 BG_Tender(Ruta_BG, label_tender = f'{name}', p0=[4200,1000,1], 
-              bins_histo=200, distribution = landau,
+              bins_histo=1000, distribution = landau,
               Label_histo = 'Counts_BG', lim = True, 
               x_min= 2000, x_max=12000, plot_histos= False,
               color_tender = 'crimson')
@@ -241,7 +244,6 @@ plt.xlabel('Wavelength (nm)', fontsize=15)
 plt.ylabel('Photon Count (A.U.)', fontsize=15)
 plt.legend(loc='upper right', fontsize=15)
 plt.tick_params(axis='both', which='major', labelsize=18)
-plt.ylim(0,200)
 
 plt.savefig(f'{name}_STDMeanChannel.jpg', format='jpg', bbox_inches='tight')
 
@@ -267,20 +269,49 @@ Histo(Mean_Counts, landau, [4200,1000,1], 100, f'Mean {name}',
 # ------- Calibrated Spectrum ----------
 df_1 = pd.read_csv(Ruta_Results)
 
-wavelength_NoAlt = df_1['wavelength']
-intensity_NoAlt = df_1['intensity']
+wavelength_Results = df_1['wavelength']
+intensity_Results = df_1['intensity']
 
 plt.figure(figsize=(12,8))
 
-plt.plot(wavelength_NoAlt, intensity_NoAlt, 
-         label=f'{name}', color='navy', linewidth = 0.5, alpha = 1)
+plt.plot(wavelength_Results, intensity_Results, 
+         label=f'{name}', color='magenta', linewidth = 0.5, alpha = 1)
+plt.legend(fontsize=20)
+plt.xlabel('Wavelenght', fontsize=15)
+plt.ylabel('Absolute Counts (A.U.)', fontsize=15)
+plt.tick_params(axis='both', which='major', labelsize=15)
+plt.grid()
+
+plt.savefig(f'{name}_CalibratedResults.jpg', format='jpg', 
+            bbox_inches='tight', dpi = 300)
+
+
+# ----------- Comparacion con Candela ------------------
+
+df_candela = pd.read_csv(Ruta_Candela)
+
+wavelength_Candela = df_candela['wavelength']
+intensity_Candela = df_candela['intensity']
+
+# El plot normalizado lo hacemos con respecto a la mayor intensidad de la candela
+intensity_norm_Results = intensity_Results / max(intensity_Candela)
+intensity_norm_Candela = intensity_Candela / max(intensity_Candela)
+
+plt.figure(figsize=(12,8))
+
+plt.plot(wavelength_Results, intensity_norm_Results, 
+         label=f'{name}', color='magenta', linewidth = 0.5, alpha = 1)
+
+plt.plot(wavelength_Candela, intensity_norm_Candela, 
+         label=f'Candela (try3)', color='navy', linewidth = 0.5, alpha = 1)
+
 plt.legend(fontsize=20)
 plt.xlabel('Wavelenght', fontsize=15)
 plt.ylabel('Normalize Counts (A.U.)', fontsize=15)
 plt.tick_params(axis='both', which='major', labelsize=15)
 plt.grid()
 
-plt.savefig(f'{name}_CalibratedResults.jpg', format='jpg', 
+plt.savefig(f'{name}_ReferenceComparison.jpg', format='jpg', 
             bbox_inches='tight', dpi = 300)
 
 plt.show(block=False)

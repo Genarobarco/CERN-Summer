@@ -4,7 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import timedelta
 
-def RGA_spec(Ruta, f_hour, s_hour, number_ticks, 
+def RGA_spec(Ruta, f_hour, s_hour, number_ticks, title, 
              save=False, save_name='RGa_nombre'):
     
     names = ['Time','Nitrogene', 'Oxygen', 'Water', 'Argon', 'CF4', 'None']
@@ -35,7 +35,7 @@ def RGA_spec(Ruta, f_hour, s_hour, number_ticks,
                 color=color_element[indice],label=i, linewidth=2.5)
         indice+=1
 
-    plt.title(filename, fontsize=20)
+    plt.title(title, fontsize=20)
     plt.legend(fontsize=15)
     plt.xlabel('Time (hh:mm:ss)', fontsize=15)
     plt.ylabel('Pressure (mBar)', fontsize=15)
@@ -60,28 +60,14 @@ def RGA_spec(Ruta, f_hour, s_hour, number_ticks,
         plt.show()
 
 Mother_path = r'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\RGA'
-filename = 'wknd_Measurement'
+filename = 'Ar100'
 
 Ruta = rf"{Mother_path}\{filename}.txt"
 
-f_hour=[64,00,00]
-s_hour=[65,00,00]
-
-number_ticks=800
-
-RGA_spec(Ruta, f_hour, s_hour, number_ticks, 
-         save=False, save_name='2_V4-V8_Manuver_Open_V4')
-
-#%%
-
-filename = 'HeatingNight_WaterSearch'
-
-Ruta = rf"{Mother_path}\{filename}.txt"
-
-f_hour=[00,00,00]
-s_hour=[20,00,00]
+f_hour=[0,8,00]
+s_hour=[1,00,00]
 
 number_ticks=10
 
-RGA_spec(Ruta, f_hour, s_hour, number_ticks, 
-         save=False, save_name='2_V4-V8_Manuver_Open_V4')
+RGA_spec(Ruta, f_hour, s_hour, number_ticks, '11-7 Ar100 Increase Of Nitrogene',
+         save=True, save_name='11-7_Ar100_IncreaseOfNitrogene')
