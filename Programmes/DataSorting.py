@@ -1,6 +1,6 @@
-#%%
-
 import os
+import sys
+import shutil
 import re
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,6 +10,70 @@ from glob import glob
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 from scipy.special import factorial
+
+def data_pablo(Concentration, Pressure, Tube_intensity, Voltage):
+
+    path_datos = r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\Dataframe_Spectra_ArCF4"
+    datos = pd.read_pickle(path_datos)
+
+    mask1 = datos['Concentrations'] == Concentration 
+    mask2 = datos['Pressure'] == Pressure
+    mask3 = datos['Tube Intensity'] == Tube_intensity
+    mask4 = datos['Voltages'] == Voltage
+    fila = datos[mask1 & mask2 & mask3 & mask4]['Data']
+
+    wave_pablo = fila.array[0][:,0]
+    inte_pablo = fila.array[0][:,1]
+
+    inte_pablo_norm = inte_pablo / max(inte_pablo)
+
+    df_Pablo = pd.DataFrame({
+        'Lambda': wave_pablo,
+        'Counts': inte_pablo,
+        'Counts_norm': inte_pablo_norm
+        })
+    
+    return df_Pablo
+
+def create_folder(ruta_base, nombre_carpeta):
+  ruta_completa = os.path.join(ruta_base, nombre_carpeta)
+  
+  if os.path.exists(ruta_completa):
+    print(f"The folder already exists: {ruta_completa}")
+    overwrite = str(input('Do you wish to overwrite? (Y/N) '))
+
+    if overwrite == 'Y':
+
+      shutil.rmtree(ruta_completa)
+
+      try:
+        os.makedirs(ruta_completa)
+        print(f"created folder on: {ruta_completa}")
+
+      except Exception as e:
+        print(f"An error has happend on: {e}")
+    
+    else:
+        other = str(input('Do you want to create another folder? (Y/N) '))
+
+        if other == 'Y':
+           
+           new_name = input('insert new name: ')
+           ruta_completa = os.path.join(ruta_base, new_name)
+           os.makedirs(ruta_completa)
+           print(f"Folder created on: {ruta_completa}")
+
+        else:
+          input('Programme stoped')
+          sys.exit()
+
+  else:
+    try:
+      os.makedirs(ruta_completa)
+      print(f"Carpeta creada en: {ruta_completa}")
+
+    except Exception as e:
+      print(f"Ocurrió un error al crear la carpeta: {e}")
 
 def gaussian(x, mu, sigma, A):
     return (A / (sigma * np.sqrt(2 * np.pi))) *np.exp(- (x - mu)**2 
@@ -124,7 +188,7 @@ def Histo(list, distribution, p0, bins_value, Label_value, density = True,
 
   return pop, cov
 
-def BG_Tender(Rutas, label_tender, p0=[6000,100,1], 
+def BG_Tender(Rutas, save_rute, label_tender, p0=[6000,100,1], 
               bins_histo=500, distribution = landau,
               Label_histo = 'Counts_BG', lim = False, 
               x_min= 2000, x_max=14000, plot_histos= False,
@@ -173,64 +237,186 @@ def BG_Tender(Rutas, label_tender, p0=[6000,100,1],
   plt.ylabel('BG mean counts', fontsize=20)
   plt.tick_params(axis='both', labelsize=20)
 
-  plt.savefig(f'{label_tender}_BGMeanBehaviour.jpg', format='jpg', bbox_inches='tight' )
+  plt.savefig(f'{save_rute}\{label_tender}_BGMeanBehaviour.jpg', format='jpg', bbox_inches='tight' )
 
 def RP(base_path):
-
-  """
-  Returns the full path to the first file in the 'Results' subfolder 
-  of `base_path` that ends with '-calibratedResults.csv'.
-
-  Parameters:
-      base_path (str): Path to the folder containing the 'Results' subfolder.
-
-  Returns:
-      str: Full path to the matching file, or None if not found.
-  """
+  
   results_path = os.path.join(base_path, 'Results')
-  matched_files = glob(os.path.join(results_path, '*-calibratedResults.csv'))
+  files = ['calibratedResults','bgSpectrum', 'correctedSpectrum', 'rawSpectrum']
 
-  if matched_files:
-      return matched_files[0]
+  data = {}
+
+  for i in files:
+
+    matched_files = glob(os.path.join(results_path, f'*-{i}.csv'))
+
+    if matched_files:
+        df_rute = pd.read_csv(matched_files[0], sep = ',')
+        df = pd.DataFrame({
+            'Lambda': df_rute['wavelength'],
+            'Counts': df_rute['intensity'],
+            'Counts_norm': df_rute['intensity']/max(df_rute['intensity'])
+            })
+        data[i] = df
+    else:
+        print(f'{i} file did not found')
+
+  return data
+
+def Excel_value(file_path, filters, target_column):
+
+    df = pd.read_excel(file_path)
+    
+    mask = pd.Series(True, index=df.index)
+    for col, val in filters.items():
+        mask &= (df[col] == val)
+    
+    filtered_df = df[mask]
+    
+    if filtered_df.empty:
+        print("No match found with the given filters.")
+        return None
+    
+    return filtered_df[target_column].values[0]
+
+def Sep_rut(Ruta, Mother_folder = 'Spectra_2025_Pablo_Raul_Genaro'):
+  partes = Ruta.split('\\')
+
+  for i, parte in enumerate(partes):
+
+    if parte == Mother_folder:
+      indicador = i
+
+  Element = partes[indicador+1]
+  Concentracion = int(partes[indicador+2])
+  Presion = partes[indicador+3].split('_')[0]
+  Volt_Amp = partes[indicador+4]
+
+  if Presion.split('_'):
+    Presion = float(Presion.replace('-', '.'))
+
+  Ar_Concentration = 100 - int(Concentracion)
+
+  return Element, Concentracion, Presion, Volt_Amp, Ar_Concentration
+
+def Excel_writter(A, Ac, B, Bc, Pressure, VA, SV, SC, folder_path = '-'):
+
+    df = pd.read_excel(excel_path)
+
+    # New values
+    new_data = {
+        'Element A': A,
+        'Concentration A': Ac,
+        'Element B': B,
+        'Concentration B': Bc,
+        'Pressure (bar)': Pressure,
+        'Volt-Amp': VA,
+        'SV': SV,
+        'SC': SC,
+        'Folder Path': folder_path,
+    }
+
+    # Filter to check if a row with the same Element B, Concentration B, and Pressure exists
+    mask = (
+        (df['Element B'] == new_data['Element B']) &
+        (df['Concentration B'] == new_data['Concentration B']) &
+        (df['Pressure (bar)'] == new_data['Pressure (bar)'])
+    )
+
+    if df[mask].empty:
+        # No match found, append new row
+        df = pd.concat([df, pd.DataFrame([new_data])], ignore_index=True)
+        print("New row added.")
+    else:
+        # Match found, update that row
+        for key, value in new_data.items():
+            df.loc[mask, key] = value
+        print("Row updated.")
+
+    # Save back to Excel
+    df.to_excel(excel_path, index=False)
+
+print('----------------------------------------------')
+print('            DATA SORTING STARTED              ')
+print('----------------------------------------------')
+#------------- Ruta ----------------
+
+Ruta=r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\1\2_bar\40kV40mA\0V"
+excel_path = r'C:\Users\genar\VSC code\CERN-Summer\Whole_Data.xlsx'
+
+# ------- Analisis de Ruta -----------
+
+folder_name = 'Analized_Data'
+create_folder(Ruta, folder_name)
+
+Element, Concentracion, Presion, Volt_Amp, Ar_Concentration = Sep_rut(Ruta)
+
+# ----------- Values ---------------
+
+Element_A = 'Ar'
+Concentration_A = Ar_Concentration
+Element_B = Element
+Concentracion_B = Concentracion
+Pressure = Presion
+
+filters = {
+    'Element A': Element_A,
+    'Concentration A':  Concentration_A,
+    'Element B': Element_B,
+    'Concentration B': Concentracion_B,
+    'Pressure (bar)': Pressure
+}
+
+print(' ')
+
+if Excel_value(excel_path, filters, 'SC'):
+   
+  Saturation_current = Excel_value(excel_path, filters, 'SC')
+  Saturation_volt = Excel_value(excel_path, filters, 'SV')
+
+  print('The row already exists with a value of SV = ',Saturation_volt,'V and SC=', Saturation_current,'A')
+  update = input('Do you wish to update? (Y/N) ')
+
+  if update=='Y':
+    Saturation_Voltage_UPD = float(input('UPDATED value of VOLTAGE: '))
+    Saturation_Amp_UPD = float(input('UPDATED value of CURRENT: '))
+
+    Excel_writter(Element_A, Concentration_A, 
+                  Element_B, Concentracion_B, 
+                  Pressure, '40kV40mA', SV = Saturation_Voltage_UPD, SC = Saturation_Amp_UPD)
+    
+    Saturation_current = Excel_value(excel_path, filters, 'SC')
+    
   else:
-      return None
+      Saturation_current = Excel_value(excel_path, filters, 'SC')
+     
+else:
 
-# -------- Path ---------
+  Saturation_Voltage_NEW = float(input('NEW value of VOLTAGE: '))
+  Saturation_Amp_NEW = float(input('NEW value of CURRENT: '))
+  
+  Excel_writter(Element_A, Concentration_A, 
+              Element_B, Concentracion_B, 
+              Pressure, '40kV40mA', SV = Saturation_Voltage_NEW, SC = Saturation_Amp_NEW)
+  
+  Saturation_current = Excel_value(excel_path, filters, 'SC')
 
-Ruta_Candela = r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\CF4\1\5_bar\40kV40mA\Gena_measurements\try3\Results\try3-0.72uA-calibratedResults.csv"
-
-Ruta=r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\Ar\100\5_bar\40kV40mA\0V_try4"
-
-Folder_elements = 'Spectra_2025_Pablo_Raul_Genaro'
-partes = Ruta.split('\\')
-
-for i, parte in enumerate(partes):
-
-  if parte == Folder_elements:
-    indicador = i
-
-Element = partes[indicador+1]
-Concentracion = partes[indicador+2]
-Presion = partes[indicador+3]
-Volt_Amp = partes[indicador+4]
-
-Ar_Concentration = 100 - int(Concentracion)
-Ar_C = str(Ar_Concentration)
+print(' ')
 
 Ruta_BG=glob(f'{Ruta}\DataBG\*.txt')
-Ruta_Results = RP(Ruta)
 
-name = f'Ar{Element}_{Ar_C}{Concentracion}_{Presion}'
+name = f'Ar{Element}_{Ar_Concentration}{Concentracion}_{Presion}'
 
 # -------- BG behaviour --------
 
-BG_Tender(Ruta_BG, label_tender = f'{name}', p0=[4200,1000,1], 
+BG_Tender(Ruta_BG, f'{Ruta}\{folder_name}', label_tender = f'{name}', p0=[4200,1000,1], 
               bins_histo=1000, distribution = landau,
               Label_histo = 'Counts_BG', lim = True, 
               x_min= 2000, x_max=12000, plot_histos= False,
               color_tender = 'crimson')
 
 # ----- Mean average for all files ---------
+
 df = Mean_BG(Ruta_BG)
 
 Lambda = df['Lambda']
@@ -245,74 +431,84 @@ plt.ylabel('Photon Count (A.U.)', fontsize=15)
 plt.legend(loc='upper right', fontsize=15)
 plt.tick_params(axis='both', which='major', labelsize=18)
 
-plt.savefig(f'{name}_STDMeanChannel.jpg', format='jpg', bbox_inches='tight')
+plt.savefig(f'{Ruta}\{folder_name}\{name}_STDMeanChannel.jpg', format='jpg', bbox_inches='tight')
 
 plt.figure(figsize=(12,8))
 plt.errorbar(Lambda, Mean_Counts, yerr=Std_Counts,
              label=f'{name}-Mean BGSpectrum', color='black',
              fmt=':.', markersize=1)
-# plt.hlines(y=0, xmin=170, xmax=900)
 plt.xlabel('Wavelength (nm)', fontsize=15)
 plt.ylabel('Photon Count (A.U.)', fontsize=15)
 plt.legend(loc='upper right', fontsize=15)
 plt.tick_params(axis='both', which='major', labelsize=18)
-plt.savefig(f'{name}_MHisto.jpg', format='jpg', bbox_inches='tight')
+plt.savefig(f'{Ruta}\{folder_name}\{name}_MHisto.jpg', format='jpg', bbox_inches='tight')
 
-Histo(Std_Counts, landau, [60,15,10], 400, f'Std {name}', 
-      lim=True, x_min=0, x_max=300, save_name=f'{name}_Std')
+Histo(Std_Counts, landau, [60,15,10], 1200, f'Std {name}', 
+      lim=True, x_min=0, x_max=300, save_name=f'{Ruta}\{folder_name}\{name}_Std')
 
-Histo(Mean_Counts, landau, [4200,1000,1], 100, f'Mean {name}',
+Histo(Mean_Counts, landau, [4200,1000,1], 800, f'Mean {name}',
       color='Navy', lim=True, x_min=2000, x_max=14000, 
-      save_name=f'{name}_Mean')
-
+      save_name=f'{Ruta}\{folder_name}\{name}_Mean')
 
 # ------- Calibrated Spectrum ----------
-df_1 = pd.read_csv(Ruta_Results)
 
-wavelength_Results = df_1['wavelength']
-intensity_Results = df_1['intensity']
+filtered_data = RP(Ruta)
+df_MeanBG = Mean_BG(Ruta_BG)
+
+df_bgSpec = filtered_data['bgSpectrum']             # raw Background
+df_corrSpec = filtered_data['correctedSpectrum']
+df_raw = filtered_data['rawSpectrum']               # raw Signal
+
+df_results = filtered_data['calibratedResults']
 
 plt.figure(figsize=(12,8))
 
-plt.plot(wavelength_Results, intensity_Results, 
-         label=f'{name}', color='magenta', linewidth = 0.5, alpha = 1)
+plt.plot(df_results['Lambda'], df_results['Counts'], 
+         label=f'{name}', color='crimson', linewidth = 0.5, alpha = 1)
 plt.legend(fontsize=20)
 plt.xlabel('Wavelenght', fontsize=15)
 plt.ylabel('Absolute Counts (A.U.)', fontsize=15)
 plt.tick_params(axis='both', which='major', labelsize=15)
 plt.grid()
 
-plt.savefig(f'{name}_CalibratedResults.jpg', format='jpg', 
+plt.savefig(f'{Ruta}\{folder_name}\{name}_CalibratedResults.jpg', format='jpg', 
             bbox_inches='tight', dpi = 300)
-
-
-# ----------- Comparacion con Candela ------------------
-
-df_candela = pd.read_csv(Ruta_Candela)
-
-wavelength_Candela = df_candela['wavelength']
-intensity_Candela = df_candela['intensity']
-
-# El plot normalizado lo hacemos con respecto a la mayor intensidad de la candela
-intensity_norm_Results = intensity_Results / max(intensity_Candela)
-intensity_norm_Candela = intensity_Candela / max(intensity_Candela)
 
 plt.figure(figsize=(12,8))
 
-plt.plot(wavelength_Results, intensity_norm_Results, 
-         label=f'{name}', color='magenta', linewidth = 0.5, alpha = 1)
-
-plt.plot(wavelength_Candela, intensity_norm_Candela, 
-         label=f'Candela (try3)', color='navy', linewidth = 0.5, alpha = 1)
-
+plt.plot(df_results['Lambda'], df_results['Counts_norm'], 
+         label=f'{name}', color='crimson', linewidth = 0.5, alpha = 1)
 plt.legend(fontsize=20)
 plt.xlabel('Wavelenght', fontsize=15)
 plt.ylabel('Normalize Counts (A.U.)', fontsize=15)
 plt.tick_params(axis='both', which='major', labelsize=15)
 plt.grid()
 
-plt.savefig(f'{name}_ReferenceComparison.jpg', format='jpg', 
+plt.savefig(f'{Ruta}\{folder_name}\{name}_CalibratedResults_norm.jpg', format='jpg', 
             bbox_inches='tight', dpi = 300)
+
+
+# ---------------- Photon por Electron ----------------
+
+print('The Saturation Current is: ', Saturation_current, 'A')
+
+N_e = Saturation_current / (-1.602176634e-19)
+
+intensity_Results_photon = df_results['Counts']/N_e
+
+plt.figure(figsize=(12,8))
+
+plt.plot(df_results['Lambda'], intensity_Results_photon, 
+         label=f'{Saturation_current} A', color='blue', linewidth = 0.5)
+
+plt.legend(fontsize=20)
+plt.xlabel('Wavelenght', fontsize=15)
+plt.ylabel(r'Photons per e$^-$ (A.U.)', fontsize=15)
+plt.tick_params(axis='both', which='major', labelsize=15)
+plt.grid()
+
+plt.savefig(f'{Ruta}\{folder_name}\{name}_Photon.jpg', format='jpg', 
+            bbox_inches='tight', dpi = 300) 
 
 plt.show(block=False)
 plt.pause(0.1)
