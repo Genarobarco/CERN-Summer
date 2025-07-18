@@ -1,6 +1,8 @@
 #%%
 import os
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+import matplotlib.colors as mcolors
 import numpy as np
 import pandas as pd
 import math as math
@@ -68,23 +70,35 @@ def RP(base_path):
 
   return data
 
-ruta_1=r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\1\1_bar\40kV40mA\0V"
-ruta_2=r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\1\2_bar\40kV40mA\0V"
-ruta_3=r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\1\3_bar\40kV40mA\0V"
-ruta_4=r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\1\4_bar\40kV40mA\0V"
-ruta_45=r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\1\4-5_bar\40kV40mA\0V"
-ruta_5=r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\1\5_bar\40kV40mA\0V"
-excel_path = r'C:\Users\genar\VSC code\CERN-Summer\Whole_Data.xlsx'
+def extraer_presion(ruta):
+    """Extrae la presión en float desde la ruta."""
+    partes = ruta.split(os.sep)
+    for parte in partes:
+        if '_bar' in parte:
+            presion_str = parte.replace('_bar', '').replace('-', '.')
+            try:
+                return float(presion_str)
+            except ValueError:
+                return float('inf')  # Por si hay algún error, lo manda al final
+    return float('inf')
 
-rutas = [ruta_1, ruta_2, ruta_3, ruta_4,ruta_45, ruta_5]
+element_mix = 'N2'
+concentration_mix = 1
+
+excel_path = r'C:\Users\genar\VSC code\CERN-Summer\Whole_Data.xlsx'
+base_path = rf'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\{element_mix}\{concentration_mix}'
+pattern = os.path.join(base_path, '*_bar', '40kV40mA', '0V')
+
+rutas = glob(pattern)
+rutas_ordenadas = sorted(rutas, key=extraer_presion)
 
 pressures = []
 currents = []
 voltages = []
 electrons = []
-data_phe = []
+data = []
 
-for i in rutas:
+for i in rutas_ordenadas:
 
     Element, Concentracion, Presion, Volt_Amp, Ar_Concentration = Sep_rut(i)
 
@@ -109,7 +123,7 @@ for i in rutas:
     currents.append(Saturation_current)
     voltages.append(Saturation_volt)
     electrons.append(N_e)
-    data_phe.append(df_phe)
+    data.append([df_results, df_phe])
 
     # [0]: Corriente de Saturacion
     # [1]: Voltaje de Saturacion
@@ -132,11 +146,10 @@ ax1.tick_params(axis='both', which='major', labelsize=15)
 ax1.grid()
 
 
-
 # Second plot: Saturation Voltage (right y-axis)
 ax2 = ax1.twinx()
 color2 = 'crimson'
-ax2.errorbar(pressures, currents, yerr=1e-8,
+ax2.errorbar(pressures, currents, yerr=0.05e-7,
              label='SC', color=color2,
              linewidth=0.5, fmt='.:', markersize=15,
              elinewidth=2, capsize=3)
@@ -153,9 +166,113 @@ lines_2, labels_2 = ax2.get_legend_handles_labels()
 fig.legend(lines_1 + lines_2, labels_1 + labels_2, fontsize=15, 
            bbox_to_anchor=(0.2, 0.95))
 
-plt.tight_layout()
-plt.show()
+plt.savefig(f'Ar{Element}_{Ar_Concentration}{Concentracion}_PV_CV.jpg', format='jpg', 
+            bbox_inches='tight', dpi = 300) 
 
+plt.tight_layout()
 
 #%%
 
+# [i][j]: i-> 0,1,2,3,4,5 = Presion
+#         j-> 0,1 = df_results, df_phe
+
+Lambda = data[0][0]['Lambda']
+
+norm = mcolors.Normalize(vmin=min(pressures), vmax=max(pressures))
+colormap = cm.get_cmap('turbo')
+
+fig, ax = plt.subplots(figsize=(12, 8))
+
+for i in range(len(pressures)):
+    color = colormap(norm(pressures[i]))
+    ax.plot(Lambda, data[i][0]['Counts'].clip(lower=0),
+            label=f'{pressures[i]} bar',
+            color=color,
+            linewidth=0.5)
+
+ax.set_xlabel('Wavelength', fontsize=15)
+ax.set_ylabel('Absolute Counts (A.U)', fontsize=15)
+ax.tick_params(axis='both', which='major', labelsize=13)
+ax.grid()
+ax.legend(fontsize=13, title='Pressures', title_fontsize=12)
+
+sm = cm.ScalarMappable(cmap=colormap, norm=norm)
+sm.set_array([])
+
+cbar = fig.colorbar(sm, ax=ax)
+cbar.set_label('Pressure (bar)', fontsize=13)
+cbar.ax.tick_params(labelsize=12)
+
+plt.savefig(f'Ar{Element}_{Ar_Concentration}{Concentracion}_PV_Abs.jpg', format='jpg', 
+            bbox_inches='tight', dpi = 300) 
+
+plt.tight_layout()
+
+#%%
+
+norm = mcolors.Normalize(vmin=min(pressures), vmax=max(pressures))
+colormap = cm.get_cmap('turbo')
+
+fig, ax = plt.subplots(figsize=(12, 8))
+
+for i in range(len(pressures)):
+    color = colormap(norm(pressures[i]))
+    ax.plot(Lambda, data[i][0]['Counts_norm'].clip(lower=0),
+            label=f'{pressures[i]} bar',
+            color=color,
+            linewidth=0.5)
+
+ax.set_xlabel('Wavelength', fontsize=15)
+ax.set_ylabel('Normalize Counts (A.U)', fontsize=15)
+ax.tick_params(axis='both', which='major', labelsize=13)
+ax.grid()
+ax.legend(fontsize=13, title='Pressures', title_fontsize=12)
+
+sm = cm.ScalarMappable(cmap=colormap, norm=norm)
+sm.set_array([])
+
+cbar = fig.colorbar(sm, ax=ax)
+cbar.set_label('Pressure (bar)', fontsize=13)
+cbar.ax.tick_params(labelsize=12)
+
+plt.savefig(f'Ar{Element}_{Ar_Concentration}{Concentracion}_PV_Norms.jpg', format='jpg', 
+            bbox_inches='tight', dpi = 300) 
+
+plt.tight_layout()
+
+#%%
+
+norm = mcolors.Normalize(vmin=min(pressures), vmax=max(pressures))
+colormap = cm.get_cmap('turbo')
+
+fig, ax = plt.subplots(figsize=(12, 8))
+
+for i in range(len(pressures)):
+    color = colormap(norm(pressures[i]))
+    ax.plot(Lambda, data[i][1],
+            label=f'{pressures[i]} bar',
+            color=color,
+            linewidth=0.5)
+
+ax.set_xlabel('Wavelength', fontsize=15)
+ax.set_ylabel(r'Photons / electrons (A.U)', fontsize=15)
+ax.tick_params(axis='both', which='major', labelsize=13)
+ax.grid()
+ax.legend(fontsize=13, title='Pressures', title_fontsize=12)
+
+sm = cm.ScalarMappable(cmap=colormap, norm=norm)
+sm.set_array([])
+
+cbar = fig.colorbar(sm, ax=ax)
+cbar.set_label('Pressure (bar)', fontsize=13)
+cbar.ax.tick_params(labelsize=12)
+
+plt.savefig(f'Ar{Element}_{Ar_Concentration}{Concentracion}_PV_phe.jpg', format='jpg', 
+            bbox_inches='tight', dpi = 300) 
+
+plt.tight_layout()
+
+plt.show(block=False)
+plt.pause(0.1)
+input("Press enter to close all figures...")
+plt.close('all')

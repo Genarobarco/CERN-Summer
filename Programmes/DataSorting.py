@@ -340,7 +340,7 @@ print('            DATA SORTING STARTED              ')
 print('----------------------------------------------')
 #------------- Ruta ----------------
 
-Ruta=r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\1\1_bar\40kV40mA\0V"
+Ruta=r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\5\1_bar\40kV40mA\0V"
 excel_path = r'C:\Users\genar\VSC code\CERN-Summer\Whole_Data.xlsx'
 
 # ------- Analisis de Ruta -----------
