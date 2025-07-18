@@ -1,7 +1,6 @@
 import os
 import sys
 import shutil
-import re
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -341,7 +340,7 @@ print('            DATA SORTING STARTED              ')
 print('----------------------------------------------')
 #------------- Ruta ----------------
 
-Ruta=r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\1\2_bar\40kV40mA\0V"
+Ruta=r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\1\1_bar\40kV40mA\0V"
 excel_path = r'C:\Users\genar\VSC code\CERN-Summer\Whole_Data.xlsx'
 
 # ------- Analisis de Ruta -----------
@@ -374,7 +373,7 @@ if Excel_value(excel_path, filters, 'SC'):
   Saturation_current = Excel_value(excel_path, filters, 'SC')
   Saturation_volt = Excel_value(excel_path, filters, 'SV')
 
-  print('The row already exists with a value of SV = ',Saturation_volt,'V and SC=', Saturation_current,'A')
+  print('The row already exists with a value of SV = ', Saturation_volt,'V and SC=', Saturation_current,'A')
   update = input('Do you wish to update? (Y/N) ')
 
   if update=='Y':
@@ -453,7 +452,6 @@ Histo(Mean_Counts, landau, [4200,1000,1], 800, f'Mean {name}',
 # ------- Calibrated Spectrum ----------
 
 filtered_data = RP(Ruta)
-df_MeanBG = Mean_BG(Ruta_BG)
 
 df_bgSpec = filtered_data['bgSpectrum']             # raw Background
 df_corrSpec = filtered_data['correctedSpectrum']
@@ -490,7 +488,9 @@ plt.savefig(f'{Ruta}\{folder_name}\{name}_CalibratedResults_norm.jpg', format='j
 
 # ---------------- Photon por Electron ----------------
 
+print(' ')
 print('The Saturation Current is: ', Saturation_current, 'A')
+print()
 
 N_e = Saturation_current / (-1.602176634e-19)
 
