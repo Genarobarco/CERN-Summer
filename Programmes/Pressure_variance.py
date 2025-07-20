@@ -62,7 +62,8 @@ def RP(base_path):
         df = pd.DataFrame({
             'Lambda': df_rute['wavelength'],
             'Counts': df_rute['intensity'],
-            'Counts_norm': df_rute['intensity']/max(df_rute['intensity'])
+            'Counts_norm': df_rute['intensity']/max(df_rute['intensity']),
+            'Err_Counts': np.sqrt(df_rute['intensity'].clip(lower=0)),
             })
         data[i] = df
     else:
@@ -82,8 +83,17 @@ def extraer_presion(ruta):
                 return float('inf')  # Por si hay algún error, lo manda al final
     return float('inf')
 
+def integral(dt, col_x, col_y, lim_inf, lim_sup):
+    mask = (dt[col_x] >= lim_inf) & (dt[col_x] <= lim_sup)
+    dt_filtered = dt[mask].sort_values(by=col_x)
+
+    # Calcular la integral con método del trapecio
+    area = np.trapz(y=dt_filtered[col_y], x=dt_filtered[col_x])
+
+    return area
+
 element_mix = 'N2'
-concentration_mix = 1
+concentration_mix = 5
 
 excel_path = r'C:\Users\genar\VSC code\CERN-Summer\Whole_Data.xlsx'
 base_path = rf'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\{element_mix}\{concentration_mix}'
@@ -91,6 +101,8 @@ pattern = os.path.join(base_path, '*_bar', '40kV40mA', '0V')
 
 rutas = glob(pattern)
 rutas_ordenadas = sorted(rutas, key=extraer_presion)
+
+err_SC = 0.05e-7
 
 pressures = []
 currents = []
@@ -117,18 +129,32 @@ for i in rutas_ordenadas:
     df_results = filtered_data['calibratedResults']
 
     N_e = Saturation_current / (-1.602176634e-19)
+    err_NumeroElectrones = err_SC/ (-1.602176634e-19)
+
     df_phe = df_results['Counts']/N_e
+    err_phe = np.sqrt((df_results['Err_Counts']/N_e)**2+(df_results['Counts']*err_NumeroElectrones/(N_e)**2)**2)
 
     pressures.append(Presion)
     currents.append(Saturation_current)
     voltages.append(Saturation_volt)
     electrons.append(N_e)
-    data.append([df_results, df_phe])
+
+    df = pd.DataFrame({
+            'Lambda': df_results['Lambda'],
+            'Counts': df_results['Counts'],
+            'Counts_norm': df_results['Counts']/max(df_results['Counts']),
+            'Err_Counts': np.sqrt(df_results['Counts'].clip(lower=0)),
+            'Phe':df_phe,
+            'Err_Phe': err_phe
+            })
+
+    data.append(df)
 
     # [0]: Corriente de Saturacion
     # [1]: Voltaje de Saturacion
     # [2]: Numero de Electrones
     # [3]: Array photons per electron
+
 
 #%%
 fig, ax1 = plt.subplots(figsize=(12, 8))
@@ -174,18 +200,15 @@ plt.tight_layout()
 #%%
 
 # [i][j]: i-> 0,1,2,3,4,5 = Presion
-#         j-> 0,1 = df_results, df_phe
-
-Lambda = data[0][0]['Lambda']
 
 norm = mcolors.Normalize(vmin=min(pressures), vmax=max(pressures))
-colormap = cm.get_cmap('turbo')
+colormap = plt.colormaps['turbo']
 
 fig, ax = plt.subplots(figsize=(12, 8))
 
 for i in range(len(pressures)):
     color = colormap(norm(pressures[i]))
-    ax.plot(Lambda, data[i][0]['Counts'].clip(lower=0),
+    ax.plot(data[i]['Lambda'], data[i]['Counts'].clip(lower=0),
             label=f'{pressures[i]} bar',
             color=color,
             linewidth=0.5)
@@ -211,13 +234,13 @@ plt.tight_layout()
 #%%
 
 norm = mcolors.Normalize(vmin=min(pressures), vmax=max(pressures))
-colormap = cm.get_cmap('turbo')
+colormap = plt.colormaps['turbo']
 
 fig, ax = plt.subplots(figsize=(12, 8))
 
 for i in range(len(pressures)):
     color = colormap(norm(pressures[i]))
-    ax.plot(Lambda, data[i][0]['Counts_norm'].clip(lower=0),
+    ax.plot(data[i]['Lambda'], data[i]['Counts_norm'].clip(lower=0),
             label=f'{pressures[i]} bar',
             color=color,
             linewidth=0.5)
@@ -243,13 +266,13 @@ plt.tight_layout()
 #%%
 
 norm = mcolors.Normalize(vmin=min(pressures), vmax=max(pressures))
-colormap = cm.get_cmap('turbo')
+colormap = plt.colormaps['turbo']
 
 fig, ax = plt.subplots(figsize=(12, 8))
 
 for i in range(len(pressures)):
     color = colormap(norm(pressures[i]))
-    ax.plot(Lambda, data[i][1],
+    ax.errorbar(data[i]['Lambda'], data[i]['Phe'], yerr=data[i]['Err_Phe'],
             label=f'{pressures[i]} bar',
             color=color,
             linewidth=0.5)
@@ -276,3 +299,4 @@ plt.show(block=False)
 plt.pause(0.1)
 input("Press enter to close all figures...")
 plt.close('all')
+

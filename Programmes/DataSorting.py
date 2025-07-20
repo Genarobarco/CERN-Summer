@@ -254,7 +254,8 @@ def RP(base_path):
         df = pd.DataFrame({
             'Lambda': df_rute['wavelength'],
             'Counts': df_rute['intensity'],
-            'Counts_norm': df_rute['intensity']/max(df_rute['intensity'])
+            'Counts_norm': df_rute['intensity']/max(df_rute['intensity']),
+            'Err_Counts': np.sqrt(df_rute['intensity'].clip(lower=0)),
             })
         data[i] = df
     else:
