@@ -92,8 +92,16 @@ def integral(dt, col_x, col_y, lim_inf, lim_sup):
 
     return area
 
+# ------ Errors -----------
+
+err_SC = 0.05e-7
+
+# -------- element and concentration ------------
+
 element_mix = 'N2'
-concentration_mix = 5
+concentration_mix = 1
+
+# -------- Pahts ------------
 
 excel_path = r'C:\Users\genar\VSC code\CERN-Summer\Whole_Data.xlsx'
 base_path = rf'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\{element_mix}\{concentration_mix}'
@@ -102,7 +110,27 @@ pattern = os.path.join(base_path, '*_bar', '40kV40mA', '0V')
 rutas = glob(pattern)
 rutas_ordenadas = sorted(rutas, key=extraer_presion)
 
-err_SC = 0.05e-7
+# ------ Reference --------
+
+Ruta_Candela = r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\CF4\5\5_bar\40kV40mA\After_WindowChange"
+
+Candela_FD = RP(Ruta_Candela)
+df_candela = Candela_FD['calibratedResults']
+
+filters_candela = {
+    'Element A': 'Ar',
+    'Concentration A':  95,
+    'Element B': 'CF4',
+    'Concentration B': 5,
+    'Pressure (bar)': 5
+}
+
+Current_candela = Excel_value(excel_path, filters_candela, 'SC')
+NumElectronsCandela = Current_candela / (-1.602176634e-19)
+
+Candela_phe = df_candela['Counts'] / NumElectronsCandela
+
+# -------------------------------------------------------
 
 pressures = []
 currents = []
@@ -142,8 +170,9 @@ for i in rutas_ordenadas:
     df = pd.DataFrame({
             'Lambda': df_results['Lambda'],
             'Counts': df_results['Counts'],
-            'Counts_norm': df_results['Counts']/max(df_results['Counts']),
             'Err_Counts': np.sqrt(df_results['Counts'].clip(lower=0)),
+            'Counts_norm': df_results['Counts']/max(df_results['Counts']),
+            'Err_Counts_norm': np.sqrt(df_results['Counts'].clip(lower=0))/max(df_results['Counts']),
             'Phe':df_phe,
             'Err_Phe': err_phe
             })
@@ -212,6 +241,11 @@ for i in range(len(pressures)):
             label=f'{pressures[i]} bar',
             color=color,
             linewidth=0.5)
+    ax.fill_between(data[i]['Lambda'], 
+                    data[i]['Counts']-data[i]['Err_Counts'],
+                    data[i]['Counts']+data[i]['Err_Counts'],
+                    color=color,
+                    alpha = 0.5)
 
 ax.set_xlabel('Wavelength', fontsize=15)
 ax.set_ylabel('Absolute Counts (A.U)', fontsize=15)
@@ -244,6 +278,11 @@ for i in range(len(pressures)):
             label=f'{pressures[i]} bar',
             color=color,
             linewidth=0.5)
+    ax.fill_between(data[i]['Lambda'], 
+                    data[i]['Counts_norm']-data[i]['Err_Counts_norm'],
+                    data[i]['Counts_norm']+data[i]['Err_Counts_norm'],
+                    color=color,
+                    alpha = 0.5)
 
 ax.set_xlabel('Wavelength', fontsize=15)
 ax.set_ylabel('Normalize Counts (A.U)', fontsize=15)
@@ -272,10 +311,18 @@ fig, ax = plt.subplots(figsize=(12, 8))
 
 for i in range(len(pressures)):
     color = colormap(norm(pressures[i]))
-    ax.errorbar(data[i]['Lambda'], data[i]['Phe'], yerr=data[i]['Err_Phe'],
+    ax.plot(data[i]['Lambda'], data[i]['Phe'],
             label=f'{pressures[i]} bar',
             color=color,
             linewidth=0.5)
+    ax.fill_between(data[i]['Lambda'], 
+                    data[i]['Phe']-data[1]['Err_Phe'],
+                    data[i]['Phe']+data[1]['Err_Phe'],
+                    color=color,
+                    alpha = 0.5)
+    
+ax.plot(df_candela['Lambda'], Candela_phe, 
+         label=f'Reference - {Current_candela} A', color='darkviolet', linewidth = 0.5)
 
 ax.set_xlabel('Wavelength', fontsize=15)
 ax.set_ylabel(r'Photons / electrons (A.U)', fontsize=15)

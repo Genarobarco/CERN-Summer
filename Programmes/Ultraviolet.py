@@ -83,16 +83,35 @@ def extraer_presion(ruta):
                 return float('inf')  # Por si hay algún error, lo manda al final
     return float('inf')
 
-def integral(dt, col_x, col_y, lim_inf, lim_sup):
+def integral(dt, col_x, err_x, col_y, err_y, lim_inf, lim_sup):
     mask = (dt[col_x] >= lim_inf) & (dt[col_x] <= lim_sup)
-    dt_filtered = dt[mask].sort_values(by=col_x)
+    dt_filtered = dt[mask].sort_values(by=col_x).reset_index(drop=True)
 
-    # Calcular la integral con método del trapecio
-    area = np.trapezoid(y=dt_filtered[col_y], x=dt_filtered[col_x])
+    x = dt_filtered[col_x].values
+    y = dt_filtered[col_y].values
+    dy = dt_filtered[err_y].values  # Uncertainty in y
+    dx = dt_filtered[err_x].values if err_x in dt_filtered.columns else np.diff(x, prepend=x[0])
 
-    return area
+    # Trapezoidal integration
+    area = np.trapezoid(y=y, x=x)
 
-element_mix = 'N2'
+    error_squared = 0
+    for i in range(len(x)-1):
+        base = x[i+1] - x[i]
+        avg_y_err_sq = base**2 * (dy[i+1]**2+dy[i]**2)
+        error_squared += avg_y_err_sq
+
+    total_error = np.sqrt(error_squared)
+
+    return area, total_error
+
+# Errores:
+err_SC = 0.05e-7 #A
+err_lambda = 50 #nm
+err_pressure = 5e-3 #bar
+#----------------
+
+element_mix = 'N2' 
 Mix_Integrals = {}
 list_concentraciones = [1,5]
 
@@ -111,8 +130,6 @@ for concentration_mix in list_concentraciones:
 
     rutas = glob(pattern)
     rutas_ordenadas = sorted(rutas, key=extraer_presion)
-
-    err_SC = 0.05e-7
 
     pressures = []
     currents = []
@@ -152,30 +169,34 @@ for concentration_mix in list_concentraciones:
         df = pd.DataFrame({
                 'Lambda': df_results['Lambda'],
                 'Counts': df_results['Counts'],
-                'Counts_norm': df_results['Counts']/max(df_results['Counts']),
                 'Err_Counts': np.sqrt(df_results['Counts'].clip(lower=0)),
+                'Counts_norm': df_results['Counts']/max(df_results['Counts']),
+                'Err_Counts_norm': np.sqrt(df_results['Counts'].clip(lower=0))/max(df_results['Counts']),
                 'Phe':df_phe,
                 'Err_Phe': err_phe
                 })
 
         data.append(df)
 
-        # [0]: Corriente de Saturacion
-        # [1]: Voltaje de Saturacion
-        # [2]: Numero de Electrones
-        # [3]: Array photons per electron
-
 #   ---- Calculo Integral ----
 
     print('Lista de presiones: ', pressures)
     integrales = []
+    err_integral = []
     for ValPressure in pressures:
-        sum = integral(data[int(ValPressure)], 'Lambda', 'Phe', 200, 300)
+        sum, err = integral(data[int(ValPressure)], 
+                       'Lambda', err_lambda,
+                       'Phe', 'Err_Phe',
+                       200, 300)
         integrales.append(sum)
+        err_integral.append(err)
+
+    print(err_integral)
 
     df = pd.DataFrame({
             'Pressures': pressures,
-            'integrals': integrales 
+            'integrals': integrales, 
+            'Err_int': err_integral
             })
 
     Mix_Integrals[concentration_mix] = df
@@ -227,10 +248,21 @@ for concentration_mix in list_concentraciones:
 
 plt.figure(figsize=(12,8))
 
-plt.plot(Mix_Integrals[1]['Pressures'], Mix_Integrals[1]['integrals'],
-         label='99/1', color='crimson')
-plt.plot(Mix_Integrals[5]['Pressures'], Mix_Integrals[5]['integrals'],
-         label='95/5', color='navy')
+plt.errorbar(Mix_Integrals[1]['Pressures'], 
+             Mix_Integrals[1]['integrals'], 
+             xerr= err_pressure,
+             yerr = Mix_Integrals[1]['Err_int'],
+             label='99/1', 
+             fmt='^', markersize = 10,
+             color='crimson')
+
+plt.errorbar(Mix_Integrals[5]['Pressures'], 
+         Mix_Integrals[5]['integrals'],
+         xerr = err_pressure,
+         yerr= Mix_Integrals[5]['Err_int'],
+         label='95/5', 
+         fmt='v', markersize = 10, 
+         color='navy')
 
 plt.legend(fontsize=20)
 plt.xlabel('Pressure (bar)', fontsize=15)

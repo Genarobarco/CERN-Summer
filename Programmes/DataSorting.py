@@ -1,3 +1,4 @@
+#%%
 import os
 import sys
 import shutil
@@ -342,7 +343,26 @@ print('----------------------------------------------')
 #------------- Ruta ----------------
 
 Ruta=r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\5\1_bar\40kV40mA\0V"
+Ruta_Candela = r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\CF4\5\5_bar\40kV40mA\After_WindowChange"
 excel_path = r'C:\Users\genar\VSC code\CERN-Summer\Whole_Data.xlsx'
+
+# ----------- Reference --------------
+
+Candela_FD = RP(Ruta_Candela)
+df_candela = Candela_FD['calibratedResults']
+
+filters_candela = {
+    'Element A': 'Ar',
+    'Concentration A':  95,
+    'Element B': 'CF4',
+    'Concentration B': 5,
+    'Pressure (bar)': 5
+}
+
+Current_candela = Excel_value(excel_path, filters_candela, 'SC')
+NumElectronsCandela = Current_candela / (-1.602176634e-19)
+
+Candela_phe = df_candela['Counts'] / NumElectronsCandela
 
 # ------- Analisis de Ruta -----------
 
@@ -460,10 +480,14 @@ df_raw = filtered_data['rawSpectrum']               # raw Signal
 
 df_results = filtered_data['calibratedResults']
 
-plt.figure(figsize=(12,8))
 
+plt.figure(figsize=(12,8))
 plt.plot(df_results['Lambda'], df_results['Counts'], 
          label=f'{name}', color='crimson', linewidth = 0.5, alpha = 1)
+
+plt.plot(df_candela['Lambda'], df_candela['Counts'], 
+         label=f'Reference', color='darkviolet', linewidth = 0.5, alpha = 1)
+
 plt.legend(fontsize=20)
 plt.xlabel('Wavelenght', fontsize=15)
 plt.ylabel('Absolute Counts (A.U.)', fontsize=15)
@@ -473,10 +497,13 @@ plt.grid()
 plt.savefig(f'{Ruta}\{folder_name}\{name}_CalibratedResults.jpg', format='jpg', 
             bbox_inches='tight', dpi = 300)
 
-plt.figure(figsize=(12,8))
 
+
+plt.figure(figsize=(12,8))
 plt.plot(df_results['Lambda'], df_results['Counts_norm'], 
          label=f'{name}', color='crimson', linewidth = 0.5, alpha = 1)
+plt.plot(df_candela['Lambda'], df_candela['Counts_norm'], 
+         label=f'Reference', color='darkviolet', linewidth = 0.5, alpha = 1)
 plt.legend(fontsize=20)
 plt.xlabel('Wavelenght', fontsize=15)
 plt.ylabel('Normalize Counts (A.U.)', fontsize=15)
@@ -501,6 +528,9 @@ plt.figure(figsize=(12,8))
 
 plt.plot(df_results['Lambda'], intensity_Results_photon, 
          label=f'{Saturation_current} A', color='blue', linewidth = 0.5)
+
+plt.plot(df_candela['Lambda'], Candela_phe, 
+         label=f'Reference - {Current_candela} A', color='darkviolet', linewidth = 0.5)
 
 plt.legend(fontsize=20)
 plt.xlabel('Wavelenght', fontsize=15)

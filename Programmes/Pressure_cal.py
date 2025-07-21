@@ -42,6 +42,12 @@ columna1 = presiones
 columna2 = voltajes
 
 datos = np.column_stack((columna1, columna2))
+# np.savetxt("VoltajesyPresiones.txt", datos, delimiter='\t', fmt='%.4f')
 
-# Usamos formatter con repr para máxima precisión
-np.savetxt("VoltajesyPresiones.txt", datos, delimiter='\t', fmt='%.4f')
+m_inverse = 1/pop[0]
+err_inverse = np.sqrt(np.diag(cov))[0]/pop[0]
+
+val_presion = 0.005*m_inverse
+err_valpresion = 0.005*err_inverse
+
+print(val_presion, err_valpresion)
