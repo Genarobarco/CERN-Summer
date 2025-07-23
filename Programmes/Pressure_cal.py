@@ -16,38 +16,37 @@ from scipy.special import factorial
 def lineal(x, a, b):
     return a*x+b
 
-ruta = r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\Calibracion_Presion.xlsx"
+ruta = r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\Current_ArN2_9010_5bar.xlsx"
 
-data = pd.read_excel(ruta, header=None, 
-                     names = ['Pressure', 'Voltage'])
+data = pd.read_excel(ruta, header = 0,
+                     names = ['Voltage', 'Current', 'Segunda', 'Difference'])
 
-print(data)
+plt.figure(figsize = (12,8))
+plt.scatter(data['Voltage'], data['Current'], 
+            color = 'crimson', label='Primera subida')
+plt.scatter(data['Voltage'], data['Segunda'], 
+            color = 'navy', label='Segunda subida')
+plt.xlabel('Voltage (V)', fontsize=15)
+plt.ylabel('Current (A)',fontsize=15)
+plt.tick_params(axis='both', which='major', labelsize=15)
+plt.grid()
+plt.legend(fontsize=15)
 
-pop, cov = curve_fit(lineal, data['Pressure'], data['Voltage'])
+plt.savefig(f'ArN2_9010_5bar_CV.jpg', format='jpg', 
+            bbox_inches='tight', dpi = 300)
 
-dom = np.linspace(0, 5000, 10000)
+plt.show()
 
-plt.scatter(data['Pressure'], data['Voltage'])
-plt.plot(dom, lineal(dom, *pop), color = 'crimson')
+plt.figure(figsize = (12,8))
+plt.scatter(data['Voltage'], data['Difference'], 
+            color = 'green', label='Diferencia')
+plt.xlabel('Voltage (V)', fontsize=15)
+plt.ylabel('Current (A)',fontsize=15)
+plt.tick_params(axis='both', which='major', labelsize=15)
+plt.grid()
+plt.legend(fontsize=15)
 
-presiones = [1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000]
-voltajes = []
+plt.savefig(f'ArN2_9010_5bar_Diferencia.jpg', format='jpg', 
+            bbox_inches='tight', dpi = 300)
 
-for i in presiones:
-
-    voltajes.append(lineal(i, *pop))
-
-
-columna1 = presiones
-columna2 = voltajes
-
-datos = np.column_stack((columna1, columna2))
-# np.savetxt("VoltajesyPresiones.txt", datos, delimiter='\t', fmt='%.4f')
-
-m_inverse = 1/pop[0]
-err_inverse = np.sqrt(np.diag(cov))[0]/pop[0]
-
-val_presion = 0.005*m_inverse
-err_valpresion = 0.005*err_inverse
-
-print(val_presion, err_valpresion)
+plt.show()

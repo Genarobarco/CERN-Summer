@@ -60,14 +60,14 @@ def RGA_spec(Ruta, f_hour, s_hour, number_ticks, title,
         plt.show()
 
 Mother_path = r'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\RGA'
-filename = 'Ar100'
+filename = 'Ar_100'
 
 Ruta = rf"{Mother_path}\{filename}.txt"
 
-f_hour=[0,8,00]
-s_hour=[1,00,00]
+f_hour=[0,20,00]
+s_hour=[5,30,00]
 
 number_ticks=10
 
-RGA_spec(Ruta, f_hour, s_hour, number_ticks, '11-7 Ar100 Increase Of Nitrogene',
-         save=True, save_name='11-7_Ar100_IncreaseOfNitrogene')
+RGA_spec(Ruta, f_hour, s_hour, number_ticks, f'{filename}',
+         save=False, save_name='11-7_Ar100_IncreaseOfNitrogene')

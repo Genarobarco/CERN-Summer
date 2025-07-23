@@ -35,14 +35,20 @@ def Sep_rut(Ruta, Mother_folder = 'Spectra_2025_Pablo_Raul_Genaro'):
       indicador = i
 
   Element = partes[indicador+1]
-  Concentracion = int(partes[indicador+2])
+
+  if partes[indicador+2].split('-'):
+    Concentracion = float(partes[indicador+2].replace('-', '.'))
+
+  else:
+     Concentracion = int(partes[indicador+2])
+
   Presion = partes[indicador+3].split('_')[0]
   Volt_Amp = partes[indicador+4]
 
   if Presion.split('_'):
     Presion = float(Presion.replace('-', '.'))
 
-  Ar_Concentration = 100 - int(Concentracion)
+  Ar_Concentration = 100 - Concentracion
 
   return Element, Concentracion, Presion, Volt_Amp, Ar_Concentration
 
@@ -99,12 +105,20 @@ err_SC = 0.05e-7
 # -------- element and concentration ------------
 
 element_mix = 'N2'
-concentration_mix = 1
+Concentracion_N2 = 0.1
+
+if '.' in str(Concentracion_N2):
+   Concentration_mix = str(Concentracion_N2).replace('.','-')
+
+else:
+   Concentration_mix = Concentracion_N2
+
+#%%
 
 # -------- Pahts ------------
 
-excel_path = r'C:\Users\genar\VSC code\CERN-Summer\Whole_Data.xlsx'
-base_path = rf'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\{element_mix}\{concentration_mix}'
+excel_path = r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\Whole_Data.xlsx"
+base_path = rf'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\{element_mix}\{Concentration_mix}'
 pattern = os.path.join(base_path, '*_bar', '40kV40mA', '0V')
 
 rutas = glob(pattern)
@@ -126,9 +140,6 @@ filters_candela = {
 }
 
 Current_candela = Excel_value(excel_path, filters_candela, 'SC')
-NumElectronsCandela = Current_candela / (-1.602176634e-19)
-
-Candela_phe = df_candela['Counts'] / NumElectronsCandela
 
 # -------------------------------------------------------
 
@@ -247,7 +258,7 @@ for i in range(len(pressures)):
                     color=color,
                     alpha = 0.5)
 
-ax.set_xlabel('Wavelength', fontsize=15)
+ax.set_xlabel(r'$\lambda$ (nm)', fontsize=15)
 ax.set_ylabel('Absolute Counts (A.U)', fontsize=15)
 ax.tick_params(axis='both', which='major', labelsize=13)
 ax.grid()
@@ -284,7 +295,7 @@ for i in range(len(pressures)):
                     color=color,
                     alpha = 0.5)
 
-ax.set_xlabel('Wavelength', fontsize=15)
+ax.set_xlabel(r'$\lambda$ (nm)', fontsize=15)
 ax.set_ylabel('Normalize Counts (A.U)', fontsize=15)
 ax.tick_params(axis='both', which='major', labelsize=13)
 ax.grid()
@@ -304,6 +315,13 @@ plt.tight_layout()
 
 #%%
 
+NumElectronsCandela = Current_candela / (-1.602176634e-19)
+err_NumE_candela = err_SC/ (-1.602176634e-19)
+
+Candela_phe = df_candela['Counts'] / NumElectronsCandela
+err_Candela_phe = np.sqrt((df_candela['Err_Counts']/NumElectronsCandela)**2+
+                  (df_candela['Counts']*err_NumE_candela/(NumElectronsCandela)**2)**2)
+
 norm = mcolors.Normalize(vmin=min(pressures), vmax=max(pressures))
 colormap = plt.colormaps['turbo']
 
@@ -312,19 +330,23 @@ fig, ax = plt.subplots(figsize=(12, 8))
 for i in range(len(pressures)):
     color = colormap(norm(pressures[i]))
     ax.plot(data[i]['Lambda'], data[i]['Phe'],
-            label=f'{pressures[i]} bar',
             color=color,
             linewidth=0.5)
     ax.fill_between(data[i]['Lambda'], 
-                    data[i]['Phe']-data[1]['Err_Phe'],
-                    data[i]['Phe']+data[1]['Err_Phe'],
+                    data[i]['Phe']-data[i]['Err_Phe'],
+                    data[i]['Phe']+data[i]['Err_Phe'],
+                    label=f'{pressures[i]} bar',
                     color=color,
                     alpha = 0.5)
-    
-ax.plot(df_candela['Lambda'], Candela_phe, 
-         label=f'Reference - {Current_candela} A', color='darkviolet', linewidth = 0.5)
 
-ax.set_xlabel('Wavelength', fontsize=15)
+ax.fill_between(df_candela['Lambda'], 
+                Candela_phe-err_Candela_phe,
+                Candela_phe+err_Candela_phe,
+                label=f'Reference - {Current_candela} A',
+                color='magenta',
+                alpha = 0.5)
+
+ax.set_xlabel(r'$\lambda$ (nm)', fontsize=15)
 ax.set_ylabel(r'Photons / electrons (A.U)', fontsize=15)
 ax.tick_params(axis='both', which='major', labelsize=13)
 ax.grid()
@@ -336,6 +358,8 @@ sm.set_array([])
 cbar = fig.colorbar(sm, ax=ax)
 cbar.set_label('Pressure (bar)', fontsize=13)
 cbar.ax.tick_params(labelsize=12)
+
+plt.title(f'Ar/{Element} {Ar_Concentration}/{Concentracion}')
 
 plt.savefig(f'Ar{Element}_{Ar_Concentration}{Concentracion}_PV_phe.jpg', format='jpg', 
             bbox_inches='tight', dpi = 300) 

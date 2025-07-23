@@ -35,14 +35,20 @@ def Sep_rut(Ruta, Mother_folder = 'Spectra_2025_Pablo_Raul_Genaro'):
       indicador = i
 
   Element = partes[indicador+1]
-  Concentracion = int(partes[indicador+2])
+
+  if partes[indicador+2].split('-'):
+    Concentracion = float(partes[indicador+2].replace('-', '.'))
+
+  else:
+     Concentracion = int(partes[indicador+2])
+
   Presion = partes[indicador+3].split('_')[0]
   Volt_Amp = partes[indicador+4]
 
   if Presion.split('_'):
     Presion = float(Presion.replace('-', '.'))
 
-  Ar_Concentration = 100 - int(Concentracion)
+  Ar_Concentration = 100 - Concentracion
 
   return Element, Concentracion, Presion, Volt_Amp, Ar_Concentration
 
@@ -113,19 +119,21 @@ err_pressure = 5e-3 #bar
 
 element_mix = 'N2' 
 Mix_Integrals = {}
-list_concentraciones = [1,5]
+list_concentraciones = [0.1,1,5, 10]
 
-excel_path = r'C:\Users\genar\VSC code\CERN-Summer\Whole_Data.xlsx'
+excel_path = r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\Whole_Data.xlsx"
 base_path= rf'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\{element_mix}'
 
-# folder_names = [name for name in os.listdir(base_path)
-#                 if os.path.isdir(os.path.join(base_path, name))]
+for Concentracion_N2 in list_concentraciones:
 
-# print(folder_names)
+    if '.' in str(Concentracion_N2):
+        Concentration_mix = str(Concentracion_N2).replace('.','-')
 
-for concentration_mix in list_concentraciones:
+    else:
+        Concentration_mix = Concentracion_N2
 
-    path = f'{base_path}\{concentration_mix}'
+
+    path = f'{base_path}\{Concentration_mix}'
     pattern = os.path.join(path, '*_bar', '40kV40mA', '0V')
 
     rutas = glob(pattern)
@@ -191,15 +199,13 @@ for concentration_mix in list_concentraciones:
         integrales.append(sum)
         err_integral.append(err)
 
-    print(err_integral)
-
     df = pd.DataFrame({
             'Pressures': pressures,
             'integrals': integrales, 
             'Err_int': err_integral
             })
 
-    Mix_Integrals[concentration_mix] = df
+    Mix_Integrals[Concentracion_N2] = df
 
 #   --------------------------
 
@@ -229,8 +235,8 @@ for concentration_mix in list_concentraciones:
         ax.fill_between(data_filtered['Lambda'], 0, data_filtered['Phe'],
                         color=color, alpha = 0.7)
 
-    ax.set_xlabel('Wavelength', fontsize=15)
-    ax.set_ylabel(r'Photons / electrons (A.U)', fontsize=15)
+    ax.set_xlabel(r'\lambda (nm)', fontsize=15)
+    ax.set_ylabel(r'$\gamma$ / e$^-$ (A.U)', fontsize=15)
     ax.tick_params(axis='both', which='major', labelsize=13)
     ax.grid()
     ax.legend(fontsize=13, title='Pressures', title_fontsize=12)
@@ -244,30 +250,56 @@ for concentration_mix in list_concentraciones:
 
     plt.tight_layout()
 
-    plt.show()
+    plt.title(f'Ar/{Element} {100-Concentracion_N2}/{Concentracion_N2}')
 
-plt.figure(figsize=(12,8))
+    plt.savefig(f'Ar{Element}_{Ar_Concentration}{Concentracion}_Ultraviolet_phe.jpg', format='jpg', 
+                bbox_inches='tight', dpi = 300) 
 
-plt.errorbar(Mix_Integrals[1]['Pressures'], 
-             Mix_Integrals[1]['integrals'], 
+
+
+range_concentraciones = np.linspace(list_concentraciones[0],
+                                    list_concentraciones[len(list_concentraciones)-1],
+                                    10)
+norm = mcolors.Normalize(vmin=min(range_concentraciones), vmax=max(range_concentraciones))
+colormap = plt.colormaps['turbo']
+fmt_list = ['^', 'v', 'o', 's']
+
+fig, ax = plt.subplots(figsize=(12, 8))
+
+indicador = 0
+for i in list_concentraciones:
+
+    color = colormap(norm(list_concentraciones[indicador]))
+    plt.errorbar(Mix_Integrals[i]['Pressures'], 
+             Mix_Integrals[i]['integrals'], 
              xerr= err_pressure,
-             yerr = Mix_Integrals[1]['Err_int'],
-             label='99/1', 
-             fmt='^', markersize = 10,
-             color='crimson')
+             yerr = Mix_Integrals[i]['Err_int'],
+             label=f'{100-i}/{i}', 
+             fmt=fmt_list[indicador], markersize = 10,
+             color=color)
+    
+    indicador += 1
 
-plt.errorbar(Mix_Integrals[5]['Pressures'], 
-         Mix_Integrals[5]['integrals'],
-         xerr = err_pressure,
-         yerr= Mix_Integrals[5]['Err_int'],
-         label='95/5', 
-         fmt='v', markersize = 10, 
-         color='navy')
+ax.set_xlabel(r'Pressure (bar)', fontsize=15)
+ax.set_ylabel(r'Phe $\times$ $\lambda$', fontsize=15)
+ax.tick_params(axis='both', which='major', labelsize=13)
+ax.grid()
+ax.legend(fontsize=13, title='Concentrations', title_fontsize=12)
 
-plt.legend(fontsize=20)
-plt.xlabel('Pressure (bar)', fontsize=15)
-plt.ylabel(r'Phe$\times$\lambda', fontsize=15)
-plt.tick_params(axis='both', which='major', labelsize=15)
-plt.grid()
+sm = cm.ScalarMappable(cmap=colormap, norm=norm)
+sm.set_array([])
 
-plt.show()
+cbar = fig.colorbar(sm, ax=ax)
+cbar.set_label('Relative Pressure of N2', fontsize=13)
+cbar.ax.tick_params(labelsize=12)
+
+plt.tight_layout()
+
+plt.savefig(f'Ar{Element}_Ultraviolet_phe.jpg', format='jpg', 
+                bbox_inches='tight', dpi = 300) 
+
+plt.show(block=False)
+plt.pause(0.1)
+input("Press enter to close all figures...")
+plt.close('all')
+

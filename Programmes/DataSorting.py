@@ -289,18 +289,24 @@ def Sep_rut(Ruta, Mother_folder = 'Spectra_2025_Pablo_Raul_Genaro'):
       indicador = i
 
   Element = partes[indicador+1]
-  Concentracion = int(partes[indicador+2])
+
+  if partes[indicador+2].split('-'):
+    Concentracion = float(partes[indicador+2].replace('-', '.'))
+
+  else:
+     Concentracion = int(partes[indicador+2])
+
   Presion = partes[indicador+3].split('_')[0]
   Volt_Amp = partes[indicador+4]
 
   if Presion.split('_'):
     Presion = float(Presion.replace('-', '.'))
 
-  Ar_Concentration = 100 - int(Concentracion)
+  Ar_Concentration = 100 - Concentracion
 
   return Element, Concentracion, Presion, Volt_Amp, Ar_Concentration
 
-def Excel_writter(A, Ac, B, Bc, Pressure, VA, SV, SC, folder_path = '-'):
+def Excel_writter(A, Ac, B, Bc, Pressure, VA, SV, SC, Current_3kV):
 
     df = pd.read_excel(excel_path)
 
@@ -314,7 +320,7 @@ def Excel_writter(A, Ac, B, Bc, Pressure, VA, SV, SC, folder_path = '-'):
         'Volt-Amp': VA,
         'SV': SV,
         'SC': SC,
-        'Folder Path': folder_path,
+        'C3kV': Current_3kV,
     }
 
     # Filter to check if a row with the same Element B, Concentration B, and Pressure exists
@@ -337,14 +343,18 @@ def Excel_writter(A, Ac, B, Bc, Pressure, VA, SV, SC, folder_path = '-'):
     # Save back to Excel
     df.to_excel(excel_path, index=False)
 
+print(' ')
 print('----------------------------------------------')
 print('            DATA SORTING STARTED              ')
 print('----------------------------------------------')
+print(' ')
+
 #------------- Ruta ----------------
 
-Ruta=r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\5\1_bar\40kV40mA\0V"
+Ruta=r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\0-1\1_bar\40kV40mA\0V"
+
 Ruta_Candela = r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\CF4\5\5_bar\40kV40mA\After_WindowChange"
-excel_path = r'C:\Users\genar\VSC code\CERN-Summer\Whole_Data.xlsx'
+excel_path = r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\Whole_Data.xlsx"
 
 # ----------- Reference --------------
 
@@ -390,36 +400,46 @@ filters = {
 print(' ')
 
 if Excel_value(excel_path, filters, 'SC'):
-   
+ 
   Saturation_current = Excel_value(excel_path, filters, 'SC')
   Saturation_volt = Excel_value(excel_path, filters, 'SV')
+  SC_3kV = Excel_value(excel_path, filters, 'C3kV')
 
-  print('The row already exists with a value of SV = ', Saturation_volt,'V and SC=', Saturation_current,'A')
+  print('The row already exists with a value of SV = ', Saturation_volt,'V and SC=', Saturation_current,'A and', SC_3kV, 'A at 3kV' )
   update = input('Do you wish to update? (Y/N) ')
 
   if update=='Y':
     Saturation_Voltage_UPD = float(input('UPDATED value of VOLTAGE: '))
     Saturation_Amp_UPD = float(input('UPDATED value of CURRENT: '))
+    SC_3kV_UPD = float(input('UPDATED value of CURRENT AT 3kV: '))
 
     Excel_writter(Element_A, Concentration_A, 
                   Element_B, Concentracion_B, 
-                  Pressure, '40kV40mA', SV = Saturation_Voltage_UPD, SC = Saturation_Amp_UPD)
+                  Pressure, '40kV40mA', 
+                  SV = Saturation_Voltage_UPD, 
+                  SC = Saturation_Amp_UPD,
+                  Current_3kV = SC_3kV)
     
     Saturation_current = Excel_value(excel_path, filters, 'SC')
+    Saturation_current_3kV = Excel_value(excel_path, filters, 'C3kV')
     
   else:
       Saturation_current = Excel_value(excel_path, filters, 'SC')
+      Saturation_current_3kV = Excel_value(excel_path, filters, 'C3kV')
      
 else:
 
   Saturation_Voltage_NEW = float(input('NEW value of VOLTAGE: '))
   Saturation_Amp_NEW = float(input('NEW value of CURRENT: '))
+  SC_3kV_NEW = float(input('NEW value of CURRENT AT 3kV: '))
   
   Excel_writter(Element_A, Concentration_A, 
               Element_B, Concentracion_B, 
-              Pressure, '40kV40mA', SV = Saturation_Voltage_NEW, SC = Saturation_Amp_NEW)
+              Pressure, '40kV40mA', SV = Saturation_Voltage_NEW, SC = Saturation_Amp_NEW,
+              Current_3kV=SC_3kV_NEW)
   
   Saturation_current = Excel_value(excel_path, filters, 'SC')
+  Saturation_current_3kV = Excel_value(excel_path, filters, 'C3kV')
 
 print(' ')
 
