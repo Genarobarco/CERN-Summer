@@ -59,29 +59,19 @@ def data_pablo(Concentration, Pressure, Tube_intensity, Voltage):
 
 df_pablo = data_pablo('Ar_95_CF4_5', 5.0, '40kV40mA', 0)
 
-R_1 = r'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\100\1_bar\40kV40mA\Alternate'
-R_2 = r'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\100\1_bar\40kV40mA\0V'
-R_3 = r'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\100\1_bar\40kV40mA\New_Window'
-R_3 = r'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\100\1_bar\40kV40mA\0V_Again'
+R_1 = r'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\Ar\100\5_bar\40kV40mA\0V'
+R_2 = r'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\0\1bar\40kV40mA\0V'
 
 df_1=RP(R_1)['calibratedResults']
 df_2=RP(R_2)['calibratedResults']
-df_3=RP(R_3)['calibratedResults']
-df_4=RP(R_3)['calibratedResults']
 
 plt.figure(figsize=(12,8))
 
 plt.plot(df_1['Lambda'], df_1['Counts'].clip(lower = 0), 
-         label=rf'7/7', color='blue', linewidth = 0.5)
+         label=rf'11/7 - 5bar', color='blue', linewidth = 0.5)
 
 plt.plot(df_2['Lambda'], df_2['Counts'].clip(lower = 0), 
-         label=rf'14/7', color='red', linewidth = 0.5)
-
-plt.plot(df_3['Lambda'], df_3['Counts'].clip(lower = 0), 
-         label=rf'After WC', color='green', linewidth = 0.5)
-
-plt.plot(df_4['Lambda'], df_4['Counts'].clip(lower = 0), 
-         label=rf'Current list', color='darkviolet', linewidth = 0.5)
+         label=rf'8/7 - 1bar', color='red', linewidth = 0.5)
 
 plt.legend(fontsize=20)
 plt.xlabel('Wavelenght', fontsize=15)

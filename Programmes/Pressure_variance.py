@@ -8,104 +8,18 @@ import pandas as pd
 import math as math
 from glob import glob
 from scipy.stats import norm
-from scipy.optimize import curve_fit
-from scipy.special import factorial
-
-def Excel_value(file_path, filters, target_column):
-    df = pd.read_excel(file_path)
-    
-    mask = pd.Series(True, index=df.index)
-    for col, val in filters.items():
-        mask &= (df[col] == val)
-    
-    filtered_df = df[mask]
-    
-    if filtered_df.empty:
-        print("No match found with the given filters.")
-        return None
-    
-    return filtered_df[target_column].values[0]
-
-def Sep_rut(Ruta, Mother_folder = 'Spectra_2025_Pablo_Raul_Genaro'):
-  partes = Ruta.split('\\')
-
-  for i, parte in enumerate(partes):
-
-    if parte == Mother_folder:
-      indicador = i
-
-  Element = partes[indicador+1]
-
-  if partes[indicador+2].split('-'):
-    Concentracion = float(partes[indicador+2].replace('-', '.'))
-
-  else:
-     Concentracion = int(partes[indicador+2])
-
-  Presion = partes[indicador+3].split('_')[0]
-  Volt_Amp = partes[indicador+4]
-
-  if Presion.split('_'):
-    Presion = float(Presion.replace('-', '.'))
-
-  Ar_Concentration = 100 - Concentracion
-
-  return Element, Concentracion, Presion, Volt_Amp, Ar_Concentration
-
-def RP(base_path):
-  
-  results_path = os.path.join(base_path, 'Results')
-  files = ['calibratedResults','bgSpectrum', 'correctedSpectrum', 'rawSpectrum']
-
-  data = {}
-
-  for i in files:
-
-    matched_files = glob(os.path.join(results_path, f'*-{i}.csv'))
-
-    if matched_files:
-        df_rute = pd.read_csv(matched_files[0], sep = ',')
-        df = pd.DataFrame({
-            'Lambda': df_rute['wavelength'],
-            'Counts': df_rute['intensity'],
-            'Counts_norm': df_rute['intensity']/max(df_rute['intensity']),
-            'Err_Counts': np.sqrt(df_rute['intensity'].clip(lower=0)),
-            })
-        data[i] = df
-    else:
-        print(f'{i} file did not found')
-
-  return data
-
-def extraer_presion(ruta):
-    """Extrae la presión en float desde la ruta."""
-    partes = ruta.split(os.sep)
-    for parte in partes:
-        if '_bar' in parte:
-            presion_str = parte.replace('_bar', '').replace('-', '.')
-            try:
-                return float(presion_str)
-            except ValueError:
-                return float('inf')  # Por si hay algún error, lo manda al final
-    return float('inf')
-
-def integral(dt, col_x, col_y, lim_inf, lim_sup):
-    mask = (dt[col_x] >= lim_inf) & (dt[col_x] <= lim_sup)
-    dt_filtered = dt[mask].sort_values(by=col_x)
-
-    # Calcular la integral con método del trapecio
-    area = np.trapz(y=dt_filtered[col_y], x=dt_filtered[col_x])
-
-    return area
+from Functions import Sep_rut, RP, Excel_value, extraer_presion
 
 # ------ Errors -----------
 
-err_SC = 0.05e-7
+err_SC_standard = 0.05e-7
 
 # -------- element and concentration ------------
 
 element_mix = 'N2'
 Concentracion_N2 = 0.1
+
+# -------- Pahts ------------
 
 if '.' in str(Concentracion_N2):
    Concentration_mix = str(Concentracion_N2).replace('.','-')
@@ -113,9 +27,7 @@ if '.' in str(Concentracion_N2):
 else:
    Concentration_mix = Concentracion_N2
 
-#%%
-
-# -------- Pahts ------------
+print(Concentration_mix)
 
 excel_path = r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\Whole_Data.xlsx"
 base_path = rf'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\{element_mix}\{Concentration_mix}'
@@ -164,6 +76,15 @@ for i in rutas_ordenadas:
     Saturation_current = Excel_value(excel_path, filters, 'SC')
     Saturation_volt = Excel_value(excel_path, filters, 'SV')
 
+    if Excel_value(excel_path, filters, 'C3kV')==0:
+       print('Current at 3kV do not exist. Using standard error of', err_SC_standard)
+       err_SC = err_SC_standard
+
+    else:
+       err_SC = Excel_value(excel_path, filters, 'Err SC')
+       print('Current', Excel_value(excel_path, filters, 'C3kV'))
+       print('Current Error: ', err_SC)
+
     filtered_data = RP(i)
     df_results = filtered_data['calibratedResults']
 
@@ -197,7 +118,7 @@ for i in rutas_ordenadas:
 
 
 #%%
-fig, ax1 = plt.subplots(figsize=(12, 8))
+fig, ax1 = plt.subplots(figsize=(16, 9))
 
 # First plot: Saturation Current (left y-axis)
 color1 = 'navy'
@@ -230,7 +151,7 @@ ax2.tick_params(axis='both', which='major', labelsize=14)
 lines_1, labels_1 = ax1.get_legend_handles_labels()
 lines_2, labels_2 = ax2.get_legend_handles_labels()
 fig.legend(lines_1 + lines_2, labels_1 + labels_2, fontsize=15, 
-           bbox_to_anchor=(0.2, 0.95))
+           bbox_to_anchor=(0.21, 0.9))
 
 plt.savefig(f'Ar{Element}_{Ar_Concentration}{Concentracion}_PV_CV.jpg', format='jpg', 
             bbox_inches='tight', dpi = 300) 
@@ -244,7 +165,7 @@ plt.tight_layout()
 norm = mcolors.Normalize(vmin=min(pressures), vmax=max(pressures))
 colormap = plt.colormaps['turbo']
 
-fig, ax = plt.subplots(figsize=(12, 8))
+fig, ax = plt.subplots(figsize=(16, 9))
 
 for i in range(len(pressures)):
     color = colormap(norm(pressures[i]))
@@ -267,9 +188,9 @@ ax.legend(fontsize=13, title='Pressures', title_fontsize=12)
 sm = cm.ScalarMappable(cmap=colormap, norm=norm)
 sm.set_array([])
 
-cbar = fig.colorbar(sm, ax=ax)
-cbar.set_label('Pressure (bar)', fontsize=13)
-cbar.ax.tick_params(labelsize=12)
+# cbar = fig.colorbar(sm, ax=ax)
+# cbar.set_label('Pressure (bar)', fontsize=13)
+# cbar.ax.tick_params(labelsize=12)
 
 plt.savefig(f'Ar{Element}_{Ar_Concentration}{Concentracion}_PV_Abs.jpg', format='jpg', 
             bbox_inches='tight', dpi = 300) 
@@ -281,7 +202,7 @@ plt.tight_layout()
 norm = mcolors.Normalize(vmin=min(pressures), vmax=max(pressures))
 colormap = plt.colormaps['turbo']
 
-fig, ax = plt.subplots(figsize=(12, 8))
+fig, ax = plt.subplots(figsize=(16, 9))
 
 for i in range(len(pressures)):
     color = colormap(norm(pressures[i]))
@@ -304,9 +225,9 @@ ax.legend(fontsize=13, title='Pressures', title_fontsize=12)
 sm = cm.ScalarMappable(cmap=colormap, norm=norm)
 sm.set_array([])
 
-cbar = fig.colorbar(sm, ax=ax)
-cbar.set_label('Pressure (bar)', fontsize=13)
-cbar.ax.tick_params(labelsize=12)
+# cbar = fig.colorbar(sm, ax=ax)
+# cbar.set_label('Pressure (bar)', fontsize=13)
+# cbar.ax.tick_params(labelsize=12)
 
 plt.savefig(f'Ar{Element}_{Ar_Concentration}{Concentracion}_PV_Norms.jpg', format='jpg', 
             bbox_inches='tight', dpi = 300) 
@@ -325,7 +246,7 @@ err_Candela_phe = np.sqrt((df_candela['Err_Counts']/NumElectronsCandela)**2+
 norm = mcolors.Normalize(vmin=min(pressures), vmax=max(pressures))
 colormap = plt.colormaps['turbo']
 
-fig, ax = plt.subplots(figsize=(12, 8))
+fig, ax = plt.subplots(figsize=(16, 9))
 
 for i in range(len(pressures)):
     color = colormap(norm(pressures[i]))
@@ -355,9 +276,9 @@ ax.legend(fontsize=13, title='Pressures', title_fontsize=12)
 sm = cm.ScalarMappable(cmap=colormap, norm=norm)
 sm.set_array([])
 
-cbar = fig.colorbar(sm, ax=ax)
-cbar.set_label('Pressure (bar)', fontsize=13)
-cbar.ax.tick_params(labelsize=12)
+# cbar = fig.colorbar(sm, ax=ax)
+# cbar.set_label('Pressure (bar)', fontsize=13)
+# cbar.ax.tick_params(labelsize=12)
 
 plt.title(f'Ar/{Element} {Ar_Concentration}/{Concentracion}')
 

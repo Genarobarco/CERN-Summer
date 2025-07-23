@@ -36,7 +36,7 @@ def Sep_rut(Ruta, Mother_folder = 'Spectra_2025_Pablo_Raul_Genaro'):
 
   Element = partes[indicador+1]
 
-  if partes[indicador+2].split('-'):
+  if '-' in partes[indicador+2]:
     Concentracion = float(partes[indicador+2].replace('-', '.'))
 
   else:
@@ -45,8 +45,11 @@ def Sep_rut(Ruta, Mother_folder = 'Spectra_2025_Pablo_Raul_Genaro'):
   Presion = partes[indicador+3].split('_')[0]
   Volt_Amp = partes[indicador+4]
 
-  if Presion.split('_'):
+  if '-' in Presion:
     Presion = float(Presion.replace('-', '.'))
+
+  else:
+    Presion = int(Presion)
 
   Ar_Concentration = 100 - Concentracion
 
@@ -120,6 +123,10 @@ err_pressure = 5e-3 #bar
 element_mix = 'N2' 
 Mix_Integrals = {}
 list_concentraciones = [0.1,1,5, 10]
+
+data_integral=[]
+
+integration_limits = [200, 800]
 
 excel_path = r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\Whole_Data.xlsx"
 base_path= rf'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\{element_mix}'
@@ -195,7 +202,7 @@ for Concentracion_N2 in list_concentraciones:
         sum, err = integral(data[int(ValPressure)], 
                        'Lambda', err_lambda,
                        'Phe', 'Err_Phe',
-                       200, 300)
+                       *integration_limits)
         integrales.append(sum)
         err_integral.append(err)
 
@@ -206,6 +213,7 @@ for Concentracion_N2 in list_concentraciones:
             })
 
     Mix_Integrals[Concentracion_N2] = df
+    data_integral.append(df)
 
 #   --------------------------
 
@@ -217,11 +225,11 @@ for Concentracion_N2 in list_concentraciones:
     norm = mcolors.Normalize(vmin=min(pressures), vmax=max(pressures))
     colormap = plt.colormaps['turbo']
 
-    fig, ax = plt.subplots(figsize=(12, 8))
+    fig, ax = plt.subplots(figsize=(16, 9))
 
     for i in rango:
 
-        mask = (data[i]['Lambda'] >= 200) & (data[i]['Lambda'] <= 300)
+        mask = (data[i]['Lambda'] >= integration_limits[0]) & (data[i]['Lambda'] <= integration_limits[1])
         data_filtered = data[i][mask].sort_values(by='Lambda')
 
         color = colormap(norm(pressures[i]))
@@ -255,25 +263,24 @@ for Concentracion_N2 in list_concentraciones:
     plt.savefig(f'Ar{Element}_{Ar_Concentration}{Concentracion}_Ultraviolet_phe.jpg', format='jpg', 
                 bbox_inches='tight', dpi = 300) 
 
-
-
 range_concentraciones = np.linspace(list_concentraciones[0],
                                     list_concentraciones[len(list_concentraciones)-1],
                                     10)
 norm = mcolors.Normalize(vmin=min(range_concentraciones), vmax=max(range_concentraciones))
 colormap = plt.colormaps['turbo']
-fmt_list = ['^', 'v', 'o', 's']
+fmt_list = [':^', ':v', ':o', ':s']
 
-fig, ax = plt.subplots(figsize=(12, 8))
+fig, ax = plt.subplots(figsize=(16, 9))
 
 indicador = 0
 for i in list_concentraciones:
 
     color = colormap(norm(list_concentraciones[indicador]))
-    plt.errorbar(Mix_Integrals[i]['Pressures'], 
-             Mix_Integrals[i]['integrals'], 
+    
+    plt.errorbar(data_integral[indicador]['Pressures'], 
+             data_integral[indicador]['integrals'], 
              xerr= err_pressure,
-             yerr = Mix_Integrals[i]['Err_int'],
+             yerr = data_integral[indicador]['Err_int'],
              label=f'{100-i}/{i}', 
              fmt=fmt_list[indicador], markersize = 10,
              color=color)
@@ -281,7 +288,7 @@ for i in list_concentraciones:
     indicador += 1
 
 ax.set_xlabel(r'Pressure (bar)', fontsize=15)
-ax.set_ylabel(r'Phe $\times$ $\lambda$', fontsize=15)
+ax.set_ylabel(r'$\gamma$ / e$^-$ $\times$ $\lambda$', fontsize=15)
 ax.tick_params(axis='both', which='major', labelsize=13)
 ax.grid()
 ax.legend(fontsize=13, title='Concentrations', title_fontsize=12)

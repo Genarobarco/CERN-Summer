@@ -23,9 +23,9 @@ data = pd.read_excel(ruta, header = 0,
 
 plt.figure(figsize = (12,8))
 plt.scatter(data['Voltage'], data['Current'], 
-            color = 'crimson', label='Primera subida')
+            color = 'crimson', label='First')
 plt.scatter(data['Voltage'], data['Segunda'], 
-            color = 'navy', label='Segunda subida')
+            color = 'navy', label='Second')
 plt.xlabel('Voltage (V)', fontsize=15)
 plt.ylabel('Current (A)',fontsize=15)
 plt.tick_params(axis='both', which='major', labelsize=15)
@@ -39,7 +39,7 @@ plt.show()
 
 plt.figure(figsize = (12,8))
 plt.scatter(data['Voltage'], data['Difference'], 
-            color = 'green', label='Diferencia')
+            color = 'green', label='Difference')
 plt.xlabel('Voltage (V)', fontsize=15)
 plt.ylabel('Current (A)',fontsize=15)
 plt.tick_params(axis='both', which='major', labelsize=15)
