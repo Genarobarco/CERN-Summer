@@ -8,18 +8,24 @@ import pandas as pd
 import math as math
 from glob import glob
 from scipy.stats import norm
-from Functions import Sep_rut, RP, Excel_value, extraer_presion
+from Functions import Sep_rut, RP, Excel_value, extraer_presion, integral
 
 # ------ Errors -----------
 
 err_SC_standard = 0.05e-7
+err_SV = 50 #v
+err_lambda = 5 #nm
+err_pressure = 10e-3 #bar
 
-# -------- element and concentration ------------
+# ----------- Integration Limits -----------------
 
+integration_limits = [200, 300]
+integration_limits_ref = [500, 750]
+
+# -------- element and concentration ------------s
 element_mix = 'N2'
-Concentracion_N2 = 0.5
+Concentracion_N2 = 20
 
-# -------- Pahts ------------
 
 if '.' in str(Concentracion_N2):
    Concentration_mix = str(Concentracion_N2).replace('.','-')
@@ -27,21 +33,24 @@ if '.' in str(Concentracion_N2):
 else:
    Concentration_mix = Concentracion_N2
 
-print(Concentration_mix)
+# -------- Paths ------------
 
-excel_path = r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\Whole_Data.xlsx"
 base_path = rf'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\{element_mix}\{Concentration_mix}'
 pattern = os.path.join(base_path, '*_bar', '40kV40mA', '0V')
 
 rutas = glob(pattern)
 rutas_ordenadas = sorted(rutas, key=extraer_presion)
 
+
 # ------ Reference --------
 
 Ruta_Candela = r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\CF4\5\5_bar\40kV40mA\After_WindowChange"
 
-Candela_FD = RP(Ruta_Candela)
-df_candela = Candela_FD['calibratedResults']
+pattern_data_ref = os.path.join(Ruta_Candela, 'Analized_Data', '*_AllData.txt')
+archivos_ref = glob(pattern_data_ref)
+
+rut_ref = archivos_ref[0]
+df_ref = pd.read_csv(rut_ref, sep='\t', engine='python')
 
 filters_candela = {
     'Element A': 'Ar',
@@ -51,15 +60,25 @@ filters_candela = {
     'Pressure (bar)': 5
 }
 
-Current_candela = Excel_value(excel_path, filters_candela, 'SC')
+Current_candela = Excel_value(filters_candela, 'SC')
+
+NumElectronsCandela = Current_candela / (-1.602176634e-19)
+err_NumE_candela = err_SC_standard/ (-1.602176634e-19)
+
+sum_ref, err_int_ref = integral(df_ref, 
+                    'Lambda', err_lambda,
+                    'Phe', 'Err_Phe', *integration_limits_ref)
+
+#%%
 
 # -------------------------------------------------------
 
 pressures = []
 currents = []
 voltages = []
-electrons = []
 data = []
+data_integral=[]
+
 
 for i in rutas_ordenadas:
 
@@ -73,42 +92,33 @@ for i in rutas_ordenadas:
         'Pressure (bar)': Presion
     }
 
-    Saturation_current = Excel_value(excel_path, filters, 'SC')
-    Saturation_volt = Excel_value(excel_path, filters, 'SV')
+    Saturation_current = Excel_value(filters, 'SC')
+    Saturation_volt = Excel_value(filters, 'SV')
 
-    if Excel_value(excel_path, filters, 'C3kV')==0:
+    if Excel_value(filters, 'C3kV')==0:
        print('Current at 3kV do not exist. Using standard error of', err_SC_standard)
        err_SC = err_SC_standard
 
     else:
-       err_SC = Excel_value(excel_path, filters, 'Err SC')
-       print('Current', Excel_value(excel_path, filters, 'C3kV'))
+       err_SC = Excel_value(filters, 'Err SC')
+       print('Current', Excel_value(filters, 'C3kV'))
        print('Current Error: ', err_SC)
 
-    filtered_data = RP(i)
-    df_results = filtered_data['calibratedResults']
+    pattern_data = os.path.join(i, 'Analized_Data', '*_AllData.txt')
+    archivos = glob(pattern_data)
+    
+    if archivos:
+        archivo = archivos[0]
+        df = pd.read_csv(archivo, sep='\t', engine='python')
+    else:
+        print(f"No se encontró archivo en {i}")
 
     N_e = Saturation_current / (-1.602176634e-19)
     err_NumeroElectrones = err_SC/ (-1.602176634e-19)
 
-    df_phe = df_results['Counts']/N_e
-    err_phe = np.sqrt((df_results['Err_Counts']/N_e)**2+(df_results['Counts']*err_NumeroElectrones/(N_e)**2)**2)
-
     pressures.append(Presion)
     currents.append(Saturation_current)
     voltages.append(Saturation_volt)
-    electrons.append(N_e)
-
-    df = pd.DataFrame({
-            'Lambda': df_results['Lambda'],
-            'Counts': df_results['Counts'],
-            'Err_Counts': np.sqrt(df_results['Counts'].clip(lower=0)),
-            'Counts_norm': df_results['Counts']/max(df_results['Counts']),
-            'Err_Counts_norm': np.sqrt(df_results['Counts'].clip(lower=0))/max(df_results['Counts']),
-            'Phe':df_phe,
-            'Err_Phe': err_phe
-            })
-
     data.append(df)
 
     # [0]: Corriente de Saturacion
@@ -116,9 +126,27 @@ for i in rutas_ordenadas:
     # [2]: Numero de Electrones
     # [3]: Array photons per electron
 
+print('Lista de presiones: ', pressures)
+integrales = []
+err_integral = []
+for ValPressureIndex in range(len(pressures)):
+    sum, err = integral(data[ValPressureIndex], 
+                    'Lambda', err_lambda,
+                    'Phe', 'Err_Phe',
+                    *integration_limits)
+    integrales.append(sum)
+    err_integral.append(err)
+
+df = pd.DataFrame({
+        'Pressures': pressures,
+        'integrals': integrales, 
+        'Err_int': err_integral
+        })
+
+data_integral.append(df)
 
 #%%
-fig, ax1 = plt.subplots(figsize=(16, 9))
+fig, ax1 = plt.subplots(figsize=(12, 8))
 
 # First plot: Saturation Current (left y-axis)
 color1 = 'navy'
@@ -165,7 +193,7 @@ plt.tight_layout()
 norm = mcolors.Normalize(vmin=min(pressures), vmax=max(pressures))
 colormap = plt.colormaps['turbo']
 
-fig, ax = plt.subplots(figsize=(16, 9))
+fig, ax = plt.subplots(figsize=(12, 8))
 
 for i in range(len(pressures)):
     color = colormap(norm(pressures[i]))
@@ -202,7 +230,7 @@ plt.tight_layout()
 norm = mcolors.Normalize(vmin=min(pressures), vmax=max(pressures))
 colormap = plt.colormaps['turbo']
 
-fig, ax = plt.subplots(figsize=(16, 9))
+fig, ax = plt.subplots(figsize=(12, 8))
 
 for i in range(len(pressures)):
     color = colormap(norm(pressures[i]))
@@ -236,59 +264,60 @@ plt.tight_layout()
 
 #%%
 
-NumElectronsCandela = Current_candela / (-1.602176634e-19)
-err_NumE_candela = err_SC/ (-1.602176634e-19)
-
-Candela_phe = df_candela['Counts'] / NumElectronsCandela
-err_Candela_phe = np.sqrt((df_candela['Err_Counts']/NumElectronsCandela)**2+
-                  (df_candela['Counts']*err_NumE_candela/(NumElectronsCandela)**2)**2)
-
 norm = mcolors.Normalize(vmin=min(pressures), vmax=max(pressures))
 colormap = plt.colormaps['turbo']
 
-fig, ax = plt.subplots(figsize=(16, 9))
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 9))
 
+# --- Primer gráfico: espectros ---
 for i in range(len(pressures)):
     color = colormap(norm(pressures[i]))
-    ax.plot(data[i]['Lambda'], data[i]['Phe'],
-            color=color,
-            linewidth=0.5)
-    ax.fill_between(data[i]['Lambda'], 
-                    data[i]['Phe']-data[i]['Err_Phe'],
-                    data[i]['Phe']+data[i]['Err_Phe'],
-                    label=f'{pressures[i]} bar',
-                    color=color,
-                    alpha = 0.5)
+    ax1.plot(data[i]['Lambda'], data[i]['Phe'], color=color, linewidth=0.5)
+    ax1.fill_between(data[i]['Lambda'],
+                     data[i]['Phe'] - data[i]['Err_Phe'],
+                     data[i]['Phe'] + data[i]['Err_Phe'],
+                     label=f'{pressures[i]} bar',
+                     color=color, alpha=0.5)
 
-ax.fill_between(df_candela['Lambda'], 
-                Candela_phe-err_Candela_phe,
-                Candela_phe+err_Candela_phe,
-                label=f'Reference - {Current_candela} A',
-                color='magenta',
-                alpha = 0.5)
+ax1.fill_between(df_ref['Lambda'],
+                 df_ref['Phe']- df_ref['Err_Phe'],
+                 df_ref['Phe']+ df_ref['Err_Phe'],
+                 label=f'Reference - {Current_candela} A',
+                 color='magenta', alpha=0.5)
 
-ax.set_xlabel(r'$\lambda$ (nm)', fontsize=15)
-ax.set_ylabel(r'Photons / electrons (A.U)', fontsize=15)
-ax.tick_params(axis='both', which='major', labelsize=13)
-ax.grid()
-ax.legend(fontsize=13, title='Pressures', title_fontsize=12)
+ax1.set_xlabel(r'$\lambda$ (nm)', fontsize=15)
+ax1.set_ylabel(r'Photons / electrons (A.U)', fontsize=15)
+ax1.tick_params(axis='both', which='major', labelsize=13)
+ax1.grid()
+ax1.legend(fontsize=10, title='Pressures', title_fontsize=11)
+ax1.set_title(f'Ar/{Element} {Ar_Concentration}/{Concentracion}', fontsize=14)
 
+# Colorbar para el primer gráfico
 sm = cm.ScalarMappable(cmap=colormap, norm=norm)
 sm.set_array([])
+cbar = fig.colorbar(sm, ax=ax1)
+cbar.set_label('Pressure (bar)', fontsize=13)
+cbar.ax.tick_params(labelsize=12)
 
-# cbar = fig.colorbar(sm, ax=ax)
-# cbar.set_label('Pressure (bar)', fontsize=13)
-# cbar.ax.tick_params(labelsize=12)
+# --- Segundo gráfico: integrales ---
 
-plt.title(f'Ar/{Element} {Ar_Concentration}/{Concentracion}')
+ax2.errorbar(df['Pressures'], df['integrals'],
+                yerr=df['Err_int'], xerr=err_pressure,
+                fmt='o-', label=f'{100 - Concentracion_N2}/{Concentracion_N2}',
+                color=color)
 
-plt.savefig(f'Ar{Element}_{Ar_Concentration}{Concentracion}_PV_phe.jpg', format='jpg', 
-            bbox_inches='tight', dpi = 300) 
+ax2.set_xlabel('Pressure (bar)', fontsize=12)
+ax2.set_ylabel(r'$\gamma$/e$^-$ $\times \lambda$', fontsize=12)
+ax2.tick_params(axis='both', which='major', labelsize=11)
+ax2.grid()
+ax2.legend(fontsize=10, title='Ar/N2', title_fontsize=10)
+ax2.set_title('Integrated Spectra', fontsize=14)
 
 plt.tight_layout()
+plt.savefig(f'Ar{Element}_{Ar_Concentration}{Concentracion}_PV_Phe.jpg',
+            format='jpg', bbox_inches='tight', dpi=300)
 
 plt.show(block=False)
 plt.pause(0.1)
 input("Press enter to close all figures...")
 plt.close('all')
-

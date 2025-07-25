@@ -14,7 +14,7 @@ print(' ')
 
 #------------- Ruta ----------------
 
-Ruta=r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\0-1\3_bar\40kV40mA\0V"
+Ruta=r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\CF4\5\5_bar\40kV40mA\After_WindowChange"
 Ruta_Candela = r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\CF4\5\5_bar\40kV40mA\After_WindowChange"
 
 # ----------- Reference --------------
@@ -30,10 +30,14 @@ filters_candela = {
     'Pressure (bar)': 5
 }
 
+err_SC_candela = 5e-9
 Current_candela = Excel_value(filters_candela, 'SC')
 NumElectronsCandela = Current_candela / (-1.602176634e-19)
+err_NumElectronsCandela = err_SC_candela / (-1.602176634e-19)
 
-Candela_phe = df_candela['Counts'] / NumElectronsCandela
+Candela_phe = df_candela['Counts'].clip(lower = 0) / NumElectronsCandela
+err_Candela_phe = np.sqrt((df_candela['Err_Counts']/NumElectronsCandela)**2+
+                          (df_candela['Counts']*err_NumElectronsCandela/(NumElectronsCandela)**2)**2)
 
 # ------- Analisis de Ruta -----------
 
@@ -245,10 +249,22 @@ plt.savefig(f'{ruta_data}\{name}_CalibratedResults_norm.jpg', format='jpg',
 plt.figure(figsize=(16,9))
 
 plt.plot(df_results['Lambda'], df_phe,  
-         label=f'Ar/{Element} {Ar_Concentration}/{Concentracion} {Presion}bar ({Saturation_current}A)', color='blue', linewidth = 0.5)
+         label=f'Ar/{Element} {Ar_Concentration}/{Concentracion} {Presion}bar ({Saturation_current}A)', color='navy', linewidth = 0.5)
+
+plt.fill_between(df_results['Lambda'], 
+                  df_phe-err_phe,
+                  df_phe+err_phe,
+                  color='blue',
+                  alpha = 0.5)
 
 plt.plot(df_candela['Lambda'], Candela_phe, 
          label=f'Ar/CF4 95/5 5bar ({Current_candela}A)', color='darkviolet', linewidth = 0.5)
+
+plt.fill_between(df_candela['Lambda'], 
+                  Candela_phe-err_Candela_phe,
+                  Candela_phe+err_Candela_phe,
+                  color='magenta',
+                  alpha = 0.5)
 
 plt.legend(fontsize=20)
 plt.xlabel('Wavelenght', fontsize=15)

@@ -9,7 +9,7 @@ from glob import glob
 from Functions import extraer_presion, Sep_rut, Excel_value, RP, integral
 import pandas as pd
 
-err_SC = 0.1e-7 #A
+err_SC_standard = 0.1e-7 #A
 err_SV = 50 #v
 err_lambda = 5 #nm
 err_pressure = 10e-3 #bar
@@ -47,7 +47,6 @@ for Concentracion_N2 in list_concentraciones:
     pressures = []
     currents = []
     voltages = []
-    electrons = []
     data = []
 
     title = f'Ar/N2 {100-Concentracion_N2}/{Concentracion_N2}'
@@ -64,33 +63,33 @@ for Concentracion_N2 in list_concentraciones:
             'Pressure (bar)': Presion
         }
 
-        Saturation_current = Excel_value(excel_path, filters, 'SC')
-        Saturation_volt = Excel_value(excel_path, filters, 'SV')
+        Saturation_current = Excel_value(filters, 'SC')
+        Saturation_volt = Excel_value(filters, 'SV')
 
-        filtered_data = RP(i)
-        df_results = filtered_data['calibratedResults']
+        if Excel_value(filters, 'C3kV')==0:
+            print('Current at 3kV do not exist. Using standard error of', err_SC_standard)
+            err_SC = err_SC_standard
+
+        else:
+            err_SC = Excel_value(filters, 'Err SC')
+            print('Current', Excel_value(filters, 'C3kV'))
+            print('Current Error: ', err_SC)
+
+            pattern_data = os.path.join(i, 'Analized_Data', '*_AllData.txt')
+            archivos = glob(pattern_data)
+        
+        if archivos:
+            archivo = archivos[0]
+            df = pd.read_csv(archivo, sep='\t', engine='python')
+        else:
+            print(f"No se encontró archivo en {i}")
 
         N_e = Saturation_current / (-1.602176634e-19)
         err_NumeroElectrones = err_SC/ (-1.602176634e-19)
 
-        df_phe = df_results['Counts']/N_e
-        err_phe = np.sqrt((df_results['Err_Counts']/N_e)**2+(df_results['Counts']*err_NumeroElectrones/(N_e)**2)**2)
-
         pressures.append(Presion)
         currents.append(Saturation_current)
         voltages.append(Saturation_volt)
-        electrons.append(N_e)
-
-        df = pd.DataFrame({
-                'Lambda': df_results['Lambda'],
-                'Counts': df_results['Counts'],
-                'Err_Counts': np.sqrt(df_results['Counts'].clip(lower=0)),
-                'Counts_norm': df_results['Counts']/max(df_results['Counts']),
-                'Err_Counts_norm': np.sqrt(df_results['Counts'].clip(lower=0))/max(df_results['Counts']),
-                'Phe':df_phe,
-                'Err_Phe': err_phe
-                })
-
         data.append(df)
 
     
