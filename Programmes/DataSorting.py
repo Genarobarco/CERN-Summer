@@ -6,7 +6,6 @@ import math as math
 from glob import glob
 from Functions import Sep_rut, BG_Tender, Mean_BG, Histo, RP, Excel_value, Excel_writter, landau, create_folder
 
-
 print(' ')
 print('----------------------------------------------')
 print('            DATA SORTING STARTED              ')
@@ -15,7 +14,7 @@ print(' ')
 
 #------------- Ruta ----------------
 
-Ruta=r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\0-1\3-5_bar\40kV40mA\0V"
+Ruta=r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\0-1\3_bar\40kV40mA\0V"
 Ruta_Candela = r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\CF4\5\5_bar\40kV40mA\After_WindowChange"
 
 # ----------- Reference --------------
@@ -96,7 +95,7 @@ else:
   Saturation_current_3kV = Excel_value(filters, 'C3kV')
 
 if Excel_value(filters, 'C3kV')!=0:
-  err_SC = Excel_value(filters, 'Err SC')
+  err_SC = abs(Excel_value(filters, 'Err SC'))
 
 else:
   print('Saturation Current at 3kV is not written.')
@@ -116,7 +115,7 @@ else:
                 Presion, '40kV40mA', SV=Sv, SC=Sc,
                 Current_3kV=SC_3kV_Write)
     
-    err_SC = Excel_value(filters, 'Err SC')
+    err_SC = abs(Excel_value(filters, 'Err SC'))
 
 print(' ')
 
