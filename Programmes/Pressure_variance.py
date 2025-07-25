@@ -17,7 +17,7 @@ err_SC_standard = 0.05e-7
 # -------- element and concentration ------------
 
 element_mix = 'N2'
-Concentracion_N2 = 0.1
+Concentracion_N2 = 0.5
 
 # -------- Pahts ------------
 

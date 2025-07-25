@@ -122,7 +122,7 @@ err_pressure = 5e-3 #bar
 
 element_mix = 'N2' 
 Mix_Integrals = {}
-list_concentraciones = [0.1,1,5, 10]
+list_concentraciones = [0.1, 0.5,1,5, 10]
 
 data_integral=[]
 
@@ -198,8 +198,8 @@ for Concentracion_N2 in list_concentraciones:
     print('Lista de presiones: ', pressures)
     integrales = []
     err_integral = []
-    for ValPressure in pressures:
-        sum, err = integral(data[int(ValPressure)], 
+    for ValPressureIndex in range(len(pressures)):
+        sum, err = integral(data[ValPressureIndex], 
                        'Lambda', err_lambda,
                        'Phe', 'Err_Phe',
                        *integration_limits)
@@ -268,7 +268,7 @@ range_concentraciones = np.linspace(list_concentraciones[0],
                                     10)
 norm = mcolors.Normalize(vmin=min(range_concentraciones), vmax=max(range_concentraciones))
 colormap = plt.colormaps['turbo']
-fmt_list = [':^', ':v', ':o', ':s']
+fmt_list = [':^', ':v', ':o', ':s', ':p']
 
 fig, ax = plt.subplots(figsize=(16, 9))
 

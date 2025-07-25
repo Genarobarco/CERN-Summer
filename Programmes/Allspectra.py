@@ -9,20 +9,23 @@ from glob import glob
 from Functions import extraer_presion, Sep_rut, Excel_value, RP, integral
 import pandas as pd
 
-err_SC = 0.05e-7 #A
-err_lambda = 50 #nm
-err_pressure = 5e-3 #bar
+err_SC = 0.1e-7 #A
+err_SV = 50 #v
+err_lambda = 5 #nm
+err_pressure = 10e-3 #bar
 
 element_mix = 'N2' 
 Mix_Integrals = {}
-list_concentraciones = [0.1,1,5, 10]
-integration_limits = [200, 800]
+list_concentraciones = [0.1, 0.5,1,5, 10]
+integration_limits = [200, 300]
 
 excel_path = r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\Whole_Data.xlsx"
 base_path= rf'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\{element_mix}'
 
 data_sets = []
 pressures_sets=[]
+currents_sets=[]
+voltages_sets=[]
 titles = []
 data_integral=[]
 
@@ -93,13 +96,15 @@ for Concentracion_N2 in list_concentraciones:
     
     data_sets.append(data)
     pressures_sets.append(pressures)
+    currents_sets.append(currents)
+    voltages_sets.append(voltages)
     titles.append(title)
 
     print('Lista de presiones: ', pressures)
     integrales = []
     err_integral = []
-    for ValPressure in pressures:
-        sum, err = integral(data[int(ValPressure)], 
+    for ValPressureIndex in range(len(pressures)):
+        sum, err = integral(data[ValPressureIndex], 
                        'Lambda', err_lambda,
                        'Phe', 'Err_Phe',
                        *integration_limits)
@@ -112,7 +117,6 @@ for Concentracion_N2 in list_concentraciones:
             'Err_int': err_integral
             })
 
-    Mix_Integrals[Concentracion_N2] = df
     data_integral.append(df)
 
 
@@ -142,73 +146,6 @@ err_Candela_phe = np.sqrt((df_candela['Err_Counts']/NumElectronsCandela)**2+
 
 print(f"Se cargaron {len(data_sets)} conjuntos de datos.")
 
-# fig, axs = plt.subplots(2, 3, figsize=(16, 9), sharex=True)
-
-# # Compartir eje y por fila
-# axs[0, 1].sharey(axs[0, 0])
-# axs[0, 2].sharey(axs[0, 0])
-# axs[1, 1].sharey(axs[1, 0])
-# axs[1, 2].sharey(axs[1, 0])
-
-# colormap = cm.turbo
-
-# for idx in range(4):
-#     row = idx // 3
-#     col = idx % 3
-#     ax = axs[row, col]
-
-#     data_i = data_sets[idx]
-#     pressures = pressures_sets[idx]
-#     title = titles[idx]
-
-#     norm = Normalize(vmin=min(pressures), vmax=max(pressures))
-
-#     for i in range(len(pressures)):
-#         color = colormap(norm(pressures[i]))
-#         ax.plot(data_i[i]['Lambda'], data_i[i]['Phe'],
-#                 color=color,
-#                 linewidth=0.5)
-#         ax.fill_between(data_i[i]['Lambda'],
-#                         data_i[i]['Phe'] - data_i[i]['Err_Phe'],
-#                         data_i[i]['Phe'] + data_i[i]['Err_Phe'],
-#                         color=color,
-#                         alpha=0.5)
-
-#     ax.fill_between(df_candela['Lambda'],
-#                     Candela_phe - err_Candela_phe,
-#                     Candela_phe + err_Candela_phe,
-#                     label=f'Ar/N2 95/5 5bar {Current_candela}A',
-#                     color='magenta',
-#                     alpha=0.5)
-
-#     ax.set_title(title, fontsize=11)
-#     ax.tick_params(axis='both', which='major', labelsize=9, labelbottom=True)
-#     ax.grid()
-#     ax.legend(fontsize=8, title_fontsize=8)
-
-#     if row == 1:
-#         ax.set_xlabel(r'$\lambda$ (nm)', fontsize=10)
-#     if col == 0:
-#         ax.set_ylabel(r'Photons / electrons (A.U)', fontsize=10)
-
-# # Ocultar el sexto subplot vacío
-# axs[1, 2].axis('off')
-
-# # Ajuste del layout y barra de color compartida
-# fig.subplots_adjust(right=0.89, left=0.04, hspace=0.2, wspace=0.1)
-# cbar_ax = fig.add_axes([0.9, 0.15, 0.015, 0.7])
-# sm = cm.ScalarMappable(cmap=colormap, norm=norm)
-# sm.set_array([])
-# fig.colorbar(sm, cax=cbar_ax, label='Pressure (bar)')
-
-# plt.savefig('AllSpectra.jpg', format='jpg',
-#             bbox_inches='tight', dpi=300)
-
-# plt.show(block=False)
-# plt.pause(0.1)
-# input("Presiona ENTER para cerrar la figura...")
-# plt.close('all')
-
 #%%
 
 # Compartir ejes entre los subplots (eje x por columnas, eje y entre primeras 2 columnas)
@@ -229,7 +166,7 @@ for idx in range(6):
     col = idx % 3
     ax = axs[row, col]
 
-    if idx < 4:
+    if idx < 5:
         # Espectros
         data_i = data_sets[idx]
         pressures = pressures_sets[idx]
@@ -251,7 +188,7 @@ for idx in range(6):
         ax.fill_between(df_candela['Lambda'],
                         Candela_phe - err_Candela_phe,
                         Candela_phe + err_Candela_phe,
-                        label=f'Ar/N2 95/5 5bar {Current_candela}A',
+                        label=f'Ar/CF4 95/5 5bar {Current_candela}A',
                         color='magenta',
                         alpha=0.5)
 
@@ -259,7 +196,7 @@ for idx in range(6):
         ax.tick_params(axis='both', which='major', labelsize=9, labelbottom=True)
         ax.grid()
         ax.legend(fontsize=8, title_fontsize=8)
-        ax.set_xlim(200,300)
+        ax.set_xlim(integration_limits[0], integration_limits[1])
         ax.set_ylim(-1,20)
 
         if row == 1:
@@ -267,14 +204,14 @@ for idx in range(6):
         if col == 0:
             ax.set_ylabel(r'Photons / electrons (A.U)', fontsize=10)
 
-    elif idx == 4:
-        # Plot vacío visible con ejes compartidos
-        ax.set_title('Sin datos (vacío)', fontsize=11)
-        ax.set_xlabel(r'$\lambda$ (nm)', fontsize=10)
-        if col == 0:
-            ax.set_ylabel(r'Photons / electrons (A.U)', fontsize=10)
-        ax.tick_params(axis='both', which='major', labelsize=9)
-        ax.grid()
+    # elif idx == 4:
+    #     # Plot vacío visible con ejes compartidos
+    #     ax.set_title('Sin datos (vacío)', fontsize=11)
+    #     ax.set_xlabel(r'$\lambda$ (nm)', fontsize=10)
+    #     if col == 0:
+    #         ax.set_ylabel(r'Photons / electrons (A.U)', fontsize=10)
+    #     ax.tick_params(axis='both', which='major', labelsize=9)
+    #     ax.grid()
 
     elif idx == 5:
         # Plot de integrales
@@ -282,12 +219,12 @@ for idx in range(6):
 
         for idx_int, df in enumerate(data_integral):
             color = colormap(idx_int / len(data_integral))
-            ax.errorbar(df['Pressures'], df['integrals'], yerr=df['Err_int'],
+            ax.errorbar(df['Pressures'], df['integrals'], yerr=df['Err_int'], xerr = err_pressure,
                         fmt='o-', label=f'{100 - list_concentraciones[idx_int]}/{list_concentraciones[idx_int]}',
                         color=color)
 
         ax.set_xlabel('Pressure (bar)', fontsize=10)
-        ax.set_ylabel(r'$\gamma$/e$^-$ $\times \lambda$ (Phe)', fontsize=10)
+        ax.set_ylabel(r'$\gamma$/e$^-$ $\times \lambda$', fontsize=10)
         ax.tick_params(axis='both', which='major', labelsize=9)
         ax.grid()
         ax.legend(fontsize=8, title='Ar/N2', title_fontsize=8)
@@ -298,9 +235,47 @@ sm = cm.ScalarMappable(cmap=colormap, norm=norm)
 sm.set_array([])
 fig.colorbar(sm, cax=cbar_ax, label='Pressure (bar)')
 
-plt.savefig('Ultraviolet.jpg', format='jpg',
+plt.savefig('AllSpectra.jpg', format='jpg',
             bbox_inches='tight', dpi=300)
 
+
+#%%
+
+# Crear figura con 1 fila y 2 columnas
+fig, (ax_sc, ax_sv) = plt.subplots(1, 2, figsize=(16, 9), sharex=True)
+
+# Colores por mezcla
+colors = plt.cm.turbo(np.linspace(0, 1, len(currents_sets)))
+
+# === Plot SC vs Pressure ===
+for i, (pressures, currents, title) in enumerate(zip(pressures_sets, currents_sets, titles)):
+    ax_sc.errorbar(pressures, currents,
+                   yerr = err_SC, xerr = err_pressure, 
+                   fmt = 'o-', color=colors[i], label=title)
+
+ax_sc.set_xlabel('Pressure (bar)', fontsize=14)
+ax_sc.set_ylabel('Saturation Current (A)', fontsize=14)
+ax_sc.set_title('SC vs Pressure', fontsize=14)
+ax.tick_params(axis='both', which='major', labelsize=12)
+ax_sc.grid(True)
+ax_sc.legend(fontsize=14)
+
+# === Plot SV vs Pressure ===
+for i, (pressures, voltages, title) in enumerate(zip(pressures_sets, voltages_sets, titles)):
+    ax_sv.errorbar(pressures, voltages,
+                   yerr = err_SV, xerr = err_pressure,
+                   fmt='s-', color=colors[i], label=title)
+
+ax_sv.set_xlabel('Pressure (bar)', fontsize=14)
+ax_sv.set_ylabel('Saturation Voltage (V)', fontsize=14)
+ax_sv.set_title('SV vs Pressure', fontsize=14)
+ax.tick_params(axis='both', which='major', labelsize=12)
+ax_sv.grid(True)
+ax_sv.legend(fontsize=9)
+
+# Ajustar y mostrar
+plt.tight_layout()
+plt.savefig('SC_SV_vs_Pressure.jpg', dpi=300, bbox_inches='tight')
 plt.show(block=False)
 plt.pause(0.1)
 input("Presiona ENTER para cerrar la figura...")

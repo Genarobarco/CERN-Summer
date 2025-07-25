@@ -77,8 +77,13 @@ df_4= RP(R_4)['calibratedResults']
 N_e = Saturation_current / (-1.602176634e-19)
 err_NumeroElectrones = err_SC/ (-1.602176634e-19)
 
-df_phe = df_1['Counts'].clip(lower = 0)/N_e
-err_phe = np.sqrt((df_1['Err_Counts']/N_e)**2+(df_1['Counts']*err_NumeroElectrones/(N_e)**2)**2)
+df_phe_1 = df_1['Counts'].clip(lower = 0)/N_e
+err_phe_1 = np.sqrt((df_1['Err_Counts']/N_e)**2+(df_1['Counts']*err_NumeroElectrones/(N_e)**2)**2)
+
+df_phe_2 = df_2['Counts'].clip(lower = 0)/N_e
+err_phe_2 = np.sqrt((df_2['Err_Counts']/N_e)**2+(df_2['Counts']*err_NumeroElectrones/(N_e)**2)**2)
+
+err_resta_phe = np.sqrt(err_phe_1**2+err_phe_2**2)
 
 resta_2 = (df_2['Counts'] - df_1['Counts'])/N_e
 resta_3 = (df_3['Counts'] - df_1['Counts'])/N_e
@@ -91,60 +96,60 @@ df = pd.DataFrame({
     '1': resta_2,
     '2': resta_3,
     '3': resta_4,
-    'Error': err_phe
+    'Error': err_phe_1
 })
 
 # Write the DataFrame to a .txt file (tab-separated)
 df.to_csv('ArPure_WithOutContinuous.txt', sep='\t', index=False)
 
 
-plt.figure(figsize=(16,9))
+fig, axs = plt.subplots(1, 2, figsize=(16, 9), gridspec_kw={'width_ratios': [1, 1]})
 
-plt.plot(df_1['Lambda'], df_phe, 
-         color='red', linewidth = 0.5)
+# --- PLOT IZQUIERDO: df_1 y df_2 ---
+ax_left = axs[0]
 
-plt.fill_between(df_1['Lambda'], 
-                df_phe-err_phe,
-                df_phe+err_phe,
-                label='0V', color='crimson',
-                alpha = 0.5)
+ax_left.plot(df_1['Lambda'], df_phe_1, 
+             color='red', linewidth=0.5)
 
-plt.plot(df_2['Lambda'], resta_2, 
-         color='blue', linewidth = 0.5)
+ax_left.fill_between(df_1['Lambda'], df_phe_1 - err_phe_1, df_phe_1 + err_phe_1,
+                     label='0V', color='crimson', alpha=0.5)
 
-plt.fill_between(df_2['Lambda'], 
-                resta_2-err_phe,
-                resta_2+err_phe,
-                label='900V', color='navy',
-                alpha = 0.5)
+ax_left.plot(df_2['Lambda'], df_phe_2, 
+             color='blue', linewidth=0.5)
 
-# plt.plot(df_3['Lambda'], resta_3, 
-#          color='green', linewidth = 0.5)
-# plt.fill_between(df_3['Lambda'], 
-#                 resta_3-err_phe,
-#                 resta_3+err_phe,
-#                 label='S - wait - BG', color='green',
-#                 alpha = 0.5)
+ax_left.fill_between(df_2['Lambda'], df_phe_2 - err_phe_2, df_phe_2 + err_phe_2,
+                     label='900V', color='navy', alpha=0.5)
 
-# plt.plot(df_4['Lambda'], resta_4, 
-#          color='magenta', linewidth = 0.5)
+ax_left.set_xlabel('Wavelength', fontsize=15)
+ax_left.set_ylabel(r'$\gamma$ / e$^-$ (A.U.)', fontsize=15)
+ax_left.tick_params(axis='both', which='major', labelsize=15)
+ax_left.grid()
+ax_left.legend(fontsize=12)
+ax_left.set_title('0V vs 900V', fontsize=14)
 
-# plt.fill_between(df_4['Lambda'], 
-#                 resta_4-err_phe,
-#                 resta_4+err_phe,
-#                 label='S/BG', color='magenta',
-#                 alpha = 0.5)
+# --- PLOT DERECHO: resta_2 ---
+ax_right = axs[1]
 
-plt.legend(fontsize=20)
-plt.xlabel('Wavelenght', fontsize=15)
-plt.ylabel(r'$\gamma$ / e$^-$ (A.U.)', fontsize=15)
-plt.tick_params(axis='both', which='major', labelsize=15)
-plt.grid()
+ax_right.plot(df_2['Lambda'], resta_2, 
+              color='dodgerblue', linewidth=0.5)
 
-plt.savefig(f'WithoutFirstContinuom.jpg', format='jpg', 
-            bbox_inches='tight', dpi = 300) 
+ax_right.fill_between(df_2['Lambda'], resta_2 - err_resta_phe, resta_2 + err_resta_phe,
+                      label='900V - 0V', color='cyan', alpha=0.5)
+
+ax_right.set_xlabel('Wavelength', fontsize=15)
+ax_right.set_ylabel(r'$\Delta\gamma$ / e$^-$ (A.U.)', fontsize=15)
+ax_right.tick_params(axis='both', which='major', labelsize=15)
+ax_right.grid()
+ax_right.legend(fontsize=12)
+ax_right.set_title('Difference (900V - 0V)', fontsize=14)
+
+# --- GUARDAR Y MOSTRAR ---
+plt.tight_layout()
+
+plt.savefig(f'ArPurewithField.jpg', format='jpg', 
+            bbox_inches='tight', dpi=300) 
 
 plt.show(block=False)
 plt.pause(0.1)
-input("Press enter to close all figures...")
+input("Presiona ENTER para cerrar la figura...")
 plt.close('all')

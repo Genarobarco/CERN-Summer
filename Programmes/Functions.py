@@ -106,10 +106,12 @@ def create_folder(ruta_base, nombre_carpeta):
   else:
     try:
       os.makedirs(ruta_completa)
-      print(f"Carpeta creada en: {ruta_completa}")
+      print(f"Folder created on: {ruta_completa}")
 
     except Exception as e:
       print(f"Ocurrió un error al crear la carpeta: {e}")
+
+  return ruta_completa
 
 def gaussian(x, mu, sigma, A):
     return (A / (sigma * np.sqrt(2 * np.pi))) *np.exp(- (x - mu)**2 
@@ -300,22 +302,6 @@ def RP(base_path):
 
   return data
 
-def Excel_value(file_path, filters, target_column):
-
-    df = pd.read_excel(file_path)
-    
-    mask = pd.Series(True, index=df.index)
-    for col, val in filters.items():
-        mask &= (df[col] == val)
-    
-    filtered_df = df[mask]
-    
-    if filtered_df.empty:
-        print("No match found with the given filters.")
-        return None
-    
-    return filtered_df[target_column].values[0]
-
 def Sep_rut(Ruta, Mother_folder = 'Spectra_2025_Pablo_Raul_Genaro'):
   partes = Ruta.split('\\')
 
@@ -347,37 +333,53 @@ def Sep_rut(Ruta, Mother_folder = 'Spectra_2025_Pablo_Raul_Genaro'):
 
 def Excel_writter(A, Ac, B, Bc, Pressure, VA, SV, SC, Current_3kV):
 
-    df = pd.read_excel(excel_path)
+  df = pd.read_excel(excel_path)
 
-    # New values
-    new_data = {
-        'Element A': A,
-        'Concentration A': Ac,
-        'Element B': B,
-        'Concentration B': Bc,
-        'Pressure (bar)': Pressure,
-        'Volt-Amp': VA,
-        'SV': SV,
-        'SC': SC,
-        'C3kV': Current_3kV,
-    }
+  # New values
+  new_data = {
+      'Element A': A,
+      'Concentration A': Ac,
+      'Element B': B,
+      'Concentration B': Bc,
+      'Pressure (bar)': Pressure,
+      'Volt-Amp': VA,
+      'SV': SV,
+      'SC': SC,
+      'C3kV': Current_3kV,
+  }
 
-    # Filter to check if a row with the same Element B, Concentration B, and Pressure exists
-    mask = (
-        (df['Element B'] == new_data['Element B']) &
-        (df['Concentration B'] == new_data['Concentration B']) &
-        (df['Pressure (bar)'] == new_data['Pressure (bar)'])
-    )
+  # Filter to check if a row with the same Element B, Concentration B, and Pressure exists
+  mask = (
+      (df['Element B'] == new_data['Element B']) &
+      (df['Concentration B'] == new_data['Concentration B']) &
+      (df['Pressure (bar)'] == new_data['Pressure (bar)'])
+  )
 
-    if df[mask].empty:
-        # No match found, append new row
-        df = pd.concat([df, pd.DataFrame([new_data])], ignore_index=True)
-        print("New row added.")
-    else:
-        # Match found, update that row
-        for key, value in new_data.items():
-            df.loc[mask, key] = value
-        print("Row updated.")
+  if df[mask].empty:
+      # No match found, append new row
+      df = pd.concat([df, pd.DataFrame([new_data])], ignore_index=True)
+      print("New row added.")
+  else:
+      # Match found, update that row
+      for key, value in new_data.items():
+          df.loc[mask, key] = value
+      print("Row updated.")
 
-    # Save back to Excel
-    df.to_excel(excel_path, index=False)
+  # Save back to Excel
+  df.to_excel(excel_path, index=False)
+
+def Excel_value(filters, target_column):
+
+  df = pd.read_excel(excel_path)
+  
+  mask = pd.Series(True, index=df.index)
+  for col, val in filters.items():
+      mask &= (df[col] == val)
+  
+  filtered_df = df[mask]
+  
+  if filtered_df.empty:
+      print("No match found with the given filters.")
+      return None
+  
+  return filtered_df[target_column].values[0]
