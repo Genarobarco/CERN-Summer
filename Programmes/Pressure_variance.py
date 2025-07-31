@@ -19,12 +19,13 @@ err_pressure = 10e-3 #bar
 
 # ----------- Integration Limits -----------------
 
-integration_limits = [200, 300]
+integration_limits = [300, 450]
 integration_limits_ref = [500, 750]
 
 # -------- element and concentration ------------s
 element_mix = 'N2'
-Concentracion_N2 = 20
+Concentracion_N2 = 5
+
 
 
 if '.' in str(Concentracion_N2):
@@ -100,8 +101,10 @@ for i in rutas_ordenadas:
        err_SC = err_SC_standard
 
     else:
-       err_SC = Excel_value(filters, 'Err SC')
-       print('Current', Excel_value(filters, 'C3kV'))
+       Saturation_current_3kV = Excel_value(filters, 'C3kV')
+       err_SC  = abs(Saturation_current_3kV - Saturation_current)
+       print('Current:', Saturation_current)
+       print('Current at 3kV:', Saturation_current_3kV)
        print('Current Error: ', err_SC)
 
     pattern_data = os.path.join(i, 'Analized_Data', '*_AllData.txt')

@@ -383,3 +383,65 @@ def Excel_value(filters, target_column):
       return None
   
   return filtered_df[target_column].values[0]
+
+def Excel_value_WP(Path, filters, target_column):
+
+  df = pd.read_excel(Path)
+  
+  mask = pd.Series(True, index=df.index)
+  for col, val in filters.items():
+      mask &= (df[col] == val)
+  
+  filtered_df = df[mask]
+  
+  if filtered_df.empty:
+      print("No match found with the given filters.")
+      return None
+  
+  return filtered_df[target_column].values[0]
+
+def wavelength_to_rgb(wavelength):
+    gamma = 0.8
+    intensity_max = 255
+
+    if 380 <= wavelength <= 440:
+        R = -(wavelength - 440) / (440 - 380)
+        G = 0.0
+        B = 1.0
+    elif 440 <= wavelength <= 490:
+        R = 0.0
+        G = (wavelength - 440) / (490 - 440)
+        B = 1.0
+    elif 490 <= wavelength <= 510:
+        R = 0.0
+        G = 1.0
+        B = -(wavelength - 510) / (510 - 490)
+    elif 510 <= wavelength <= 580:
+        R = (wavelength - 510) / (580 - 510)
+        G = 1.0
+        B = 0.0
+    elif 580 <= wavelength <= 645:
+        R = 1.0
+        G = -(wavelength - 645) / (645 - 580)
+        B = 0.0
+    elif 645 <= wavelength <= 750:
+        R = 1.0
+        G = 0.0
+        B = 0.0
+    else:
+        R = G = B = 0.0
+
+    if 380 <= wavelength <= 420:
+        factor = 0.3 + 0.7 * (wavelength - 380) / (420 - 380)
+    elif 420 <= wavelength <= 700:
+        factor = 1.0
+    elif 700 <= wavelength <= 750:
+        factor = 0.3 + 0.7 * (750 - wavelength) / (750 - 700)
+    else:
+        factor = 0.0
+
+    R = int(round(intensity_max * (R * factor)**gamma))
+    G = int(round(intensity_max * (G * factor)**gamma))
+    B = int(round(intensity_max * (B * factor)**gamma))
+
+    return (R/255.0, G/255.0, B/255.0)

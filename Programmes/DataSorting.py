@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import math as math
 from glob import glob
-from Functions import Sep_rut, BG_Tender, Mean_BG, Histo, RP, Excel_value, Excel_writter, landau, create_folder
+from Functions import Sep_rut, BG_Tender, Mean_BG, Histo, RP, Excel_value, Excel_writter, landau, create_folder, wavelength_to_rgb
 
 print(' ')
 print('----------------------------------------------')
@@ -14,7 +14,7 @@ print(' ')
 
 #------------- Ruta ----------------
 
-Ruta=r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\CF4\5\5_bar\40kV40mA\After_WindowChange"
+Ruta=r'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\5\1_bar\40kV40mA\0V'
 Ruta_Candela = r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\CF4\5\5_bar\40kV40mA\After_WindowChange"
 
 # ----------- Reference --------------
@@ -99,7 +99,7 @@ else:
   Saturation_current_3kV = Excel_value(filters, 'C3kV')
 
 if Excel_value(filters, 'C3kV')!=0:
-  err_SC = abs(Excel_value(filters, 'Err SC'))
+  err_SC = abs(Saturation_current_3kV - Saturation_current)
 
 else:
   print('Saturation Current at 3kV is not written.')
@@ -119,7 +119,7 @@ else:
                 Presion, '40kV40mA', SV=Sv, SC=Sc,
                 Current_3kV=SC_3kV_Write)
     
-    err_SC = abs(Excel_value(filters, 'Err SC'))
+    err_SC = abs(SC_3kV_Write - Sc)
 
 print(' ')
 
@@ -164,6 +164,8 @@ print(f'All data saved in: {ruta_data}')
 print(' ')
 
 plot_input = str(input('Do you wish to plot? (Y/N) '))
+
+#%%
 
 # ------------------------------------- PLOTS ---------------------------------------------
 # -------- BG behaviour --------
@@ -284,3 +286,4 @@ if plot_input == 'Y':
 
 else:
   plt.close('all')
+
