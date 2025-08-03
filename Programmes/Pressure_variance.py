@@ -24,7 +24,7 @@ integration_limits_ref = [500, 750]
 
 # -------- element and concentration ------------s
 element_mix = 'N2'
-Concentracion_N2 = 5
+Concentracion_N2 = 100
 
 
 
@@ -68,11 +68,8 @@ err_NumE_candela = err_SC_standard/ (-1.602176634e-19)
 
 sum_ref, err_int_ref = integral(df_ref, 
                     'Lambda', err_lambda,
-                    'Phe', 'Err_Phe', *integration_limits_ref)
-
-#%%
-
-# -------------------------------------------------------
+                    'Phe', 'Err_Phe', 
+                    *integration_limits_ref)
 
 pressures = []
 currents = []

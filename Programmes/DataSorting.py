@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import math as math
 from glob import glob
-from Functions import Sep_rut, BG_Tender, Mean_BG, Histo, RP, Excel_value, Excel_writter, landau, create_folder, wavelength_to_rgb
+from Functions import Sep_rut, BG_Tender, Mean_BG, Histo, RP, Excel_value, Excel_writter, landau, create_folder
 
 print(' ')
 print('----------------------------------------------')
@@ -14,7 +14,7 @@ print(' ')
 
 #------------- Ruta ----------------
 
-Ruta=r'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\5\1_bar\40kV40mA\0V'
+Ruta=r'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\100\1_bar\40kV40mA\0V'
 Ruta_Candela = r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\CF4\5\5_bar\40kV40mA\After_WindowChange"
 
 # ----------- Reference --------------
