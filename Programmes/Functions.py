@@ -57,7 +57,7 @@ def data_pablo(Concentration, Pressure, Tube_intensity, Voltage):
     mask3 = datos['Tube Intensity'] == Tube_intensity
     mask4 = datos['Voltages'] == Voltage
     fila = datos[mask1 & mask2 & mask3 & mask4]['Data']
-    corriente_pablo = datos[mask1 & mask2 & mask3 & mask4]['Currents']
+    corriente_pablo = datos[mask1 & mask2 & mask3 & mask4]['Currents'].values[0]
 
     wave_pablo = fila.array[0][:,0]
     inte_pablo = fila.array[0][:,1]

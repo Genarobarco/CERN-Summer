@@ -34,7 +34,9 @@ def cargar_datos(rutas):
     return datos, presiones
 
 element_mix = 'N2'
-Concentration_mix = 0
+Concentration_mix = 50
+
+yield_factor = .15
 err_lambda = 1 #nm
 integration_limits = [300,450] #nm
 
@@ -111,13 +113,13 @@ for i in range(5):
                     df['Phe'] + df['Err_Phe'], 
                     color=color, alpha=0.3)
     
-    ax.plot(df_NO['Lambda'], df_NO['Phe'], color=color_NO, label='Max Collection - ')
+    ax.plot(df_NO['Lambda'], df_NO['Phe'], color=color_NO, label='Max Collection')
     ax.fill_between(df_NO['Lambda'], 
                     df_NO['Phe'] - df_NO['Err_Phe'], 
                     df_NO['Phe'] + df_NO['Err_Phe'], 
                     color=color_NO, alpha=0.3)
 
-    ax.set_ylim(-0.1,200)
+    ax.set_ylim(-0.1,20)
     ax.set_title(f'{presiones[i]} bar')
     ax.grid(True)
     ax.legend()
@@ -128,13 +130,17 @@ for i in range(5):
         ax.set_ylabel('Photons / electrons (A.U)')
 
 # Sexto subplot independiente (posición 5)
+
+integrales = np.array(integrales)
+integrales_NO = np.array(integrales_NO)
+
 ax6 = axs[5]
 ax6.set_title("Scintillation performance")
 
-ax6.errorbar(presiones, integrales, yerr=integrales_err, fmt='o:',
-             color=color, label='Clean')
-ax6.errorbar(presiones, integrales_NO, yerr=integrales_NO_err, fmt='o:',
-             color=color_NO, label='Contaminated')
+ax6.errorbar(presiones, integrales, yerr=integrales*yield_factor, fmt='o:',
+             color=color, label='0V')
+ax6.errorbar(presiones, integrales_NO, yerr=integrales_NO*yield_factor, fmt='o:',
+             color=color_NO, label='Max Collection')
 
 ax6.set_xlabel('Pressure (bar)')
 ax6.set_ylabel(r'$\int \gamma / e^- \cdot \lambda$')

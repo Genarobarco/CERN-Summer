@@ -16,7 +16,7 @@ mask3 = datos['Tube Intensity'] == '40kV40mA'
 mask4 = datos['Voltages'] == 0
 fila = datos[mask1 & mask2 & mask3 & mask4]['Data']
 
-corriente_pablo = fila = datos[mask1 & mask2 & mask3 & mask4]['Currents']
+corriente_pablo = datos[mask1 & mask2 & mask3 & mask4]['Currents'].values[0]
 
 print(corriente_pablo)
 

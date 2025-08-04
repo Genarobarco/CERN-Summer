@@ -1,31 +1,24 @@
 #%%
-import sys
-import os
-from glob import glob
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-import matplotlib.colors as mcolors
-from matplotlib.colors import Normalize
-from scipy.stats import norm
-import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
 import math as math
-from Functions import extraer_presion, integral, data_pablo
+from Functions import RP, data_pablo, Excel_value
 
 
-Ruta_N2_withNO = r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\100\5_bar\40kV40mA\0V_wihNO\Analized_Data\ArN2_0100_5_AllData.txt"
+ConcentracionCF4 = 5
+Presion = 5
 
-NON2 = pd.read_csv(Ruta_N2_withNO, sep='\t', header=0)
+ruta_N2 = r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\100\5_bar\40kV40mA\0V\Analized_Data\ArN2_0100_5_AllData.txt"
+ruta_N2NO = r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\N2\100\5_bar\40kV40mA\0V_wihNO\Analized_Data\ArN2_0100_5_AllData.txt"
 
-df_pablo, current_pablo = data_pablo('Ar_99_CF4_1', 5, '40kV40mA', 0)
-
-print(df_pablo)
-#%%
+df_N2 = pd.read_csv(ruta_N2, sep='\t', header = 0)
+df_N2NO = pd.read_csv(ruta_N2NO, sep='\t', header = 0)
 
 plt.figure(figsize=(16,9))
 
-plt.plot(df_pablo['Lambda'], df_pablo['Counts'], label='Sunday')
-plt.plot(NON2['Lambda'], NON2['Phe'], label = 'Friday')
+plt.plot(df_N2['Lambda'], df_N2['Phe'], label='Hoy')
+plt.plot(df_N2NO['Lambda'], df_N2NO['Phe'], label = 'Viernes')
 
 plt.legend(fontsize=20)
 plt.xlabel('Wavelenght', fontsize=15)

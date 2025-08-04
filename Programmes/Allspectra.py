@@ -224,59 +224,58 @@ for idx in range(9):
         for i in range(len(pressures)):
             color = colormap(norm(pressures[i]))
             ax.plot(data_i[i]['Lambda'], data_i[i]['Phe'],
+                    label=f'{pressures[i]} bar',
                     color=color,
                     linewidth=0.5)
             
-            ax.fill_between(data_i[i]['Lambda'],
-                            data_i[i]['Phe'] - data_i[i]['Err_Phe'],
-                            data_i[i]['Phe'] + data_i[i]['Err_Phe'],
-                            color=color,
-                            alpha=0.5)
+            x = data_i[i]['Lambda']
+            y = data_i[i]['Phe']
+            
+            mask = (x >= 300) & (x <= 450)
+            ax.fill_between(x[mask], 0, y[mask], color=color, alpha=0.5)
+            
+            # ax.fill_between(data_i[i]['Lambda'],
+            #                 data_i[i]['Phe'] - data_i[i]['Err_Phe'],
+            #                 data_i[i]['Phe'] + data_i[i]['Err_Phe'],
+            #                 color=color,
+            #                 alpha=0.5)
 
-        ax.fill_between(df_candela['Lambda'].clip(lower=0),
-                        Candela_phe - err_Candela_phe,
-                        Candela_phe + err_Candela_phe,
-                        label=f'Ar/CF4 {100-Concentracion_CF4}/{Concentracion_CF4} {Presion_CF4}bar {Current_candela}A',
-                        color='magenta',
+
+        mask = (x >= 500) & (x <= 750)
+
+        x = df_candela['Lambda']
+        y = Candela_phe
+
+        ax.fill_between(x[mask], 0, y[mask], color='magenta',
+                        label=f'Ar/CF4 {100-Concentracion_CF4}/{Concentracion_CF4}',
                         alpha=0.5)
+
+        # ax.fill_between(df_candela['Lambda'].clip(lower=0),
+        #                 Candela_phe - err_Candela_phe,
+        #                 Candela_phe + err_Candela_phe,
+        #                 label=f'Ar/CF4 {100-Concentracion_CF4}/{Concentracion_CF4}',
+        #                 color='magenta',
+        #                 alpha=0.5)
 
         ax.set_title(title, fontsize=14)
         ax.tick_params(axis='both', which='major', labelsize=10, labelbottom=True)
         ax.grid()
         ax.legend(fontsize=8, title_fontsize=8)
         ax.set_ylim(-0.1, 70)
-        # ax.set_xlim(integration_limits[0], integration_limits[1])
+        ax.set_xlim(300,800)
         
         if row == 2:
-            ax.set_xlabel(r'$\lambda$ (nm)', fontsize=10)
+            ax.set_xlabel(r'Wavelength (nm)', fontsize=10)
         if col == 0:
             ax.set_ylabel(r'Photons / electrons (A.U)', fontsize=10)
 
-    # elif idx == 8:
+fig.subplots_adjust(right=0.89, left=0.04, hspace=0.30, wspace=0.1)
+# cbar_ax = fig.add_axes([0.9, 0.15, 0.015, 0.7])
+# sm = cm.ScalarMappable(cmap=colormap, norm=norm)
+# sm.set_array([])
+# fig.colorbar(sm, cax=cbar_ax, label='Pressure (bar)')
 
-    #     for idx_p, (p, y_vals) in enumerate(integrales_por_presion.items()):
-    #         # Mismos colores que en tu estilo
-    #         color = colormap(idx_p / len(integrales_por_presion))
-
-    #         ax.errorbar(list_concentraciones, y_vals/sum_candela,
-    #             fmt='o-', color=color,
-    #             label=f'{p} bar')
-
-
-# ax.set_xscale('log')
-# ax.set_xlabel('Concentration of N₂ (%)', fontsize=10)
-# ax.set_ylabel(r'$\gamma$/e$^-$ $\times \lambda$', fontsize=10)
-# ax.tick_params(axis='both', which='major', labelsize=9)
-# ax.grid(True)
-
-
-fig.subplots_adjust(right=0.89, left=0.04, hspace=0.28, wspace=0.1)
-cbar_ax = fig.add_axes([0.9, 0.15, 0.015, 0.7])
-sm = cm.ScalarMappable(cmap=colormap, norm=norm)
-sm.set_array([])
-fig.colorbar(sm, cax=cbar_ax, label='Pressure (bar)')
-
-plt.savefig('AllSpectra_uv.jpg', format='jpg',
+plt.savefig('Yield_area.jpg', format='jpg',
             bbox_inches='tight', dpi=300)
 
 
@@ -290,7 +289,7 @@ colors = plt.cm.turbo(np.linspace(0, 1, len(currents_sets)))
 
 # === Plot SC vs Pressure ===
 for i, (pressures, currents, title) in enumerate(zip(pressures_sets, currents_sets, titles)):
-    ax_sc.errorbar(pressures, currents,
+    ax_sc.errorbar(pressures, -np.array(currents),
                    yerr = err_SC, xerr = err_pressure, 
                    fmt = 'o-', color=colors[i], label=title)
 
@@ -313,6 +312,9 @@ ax_sv.set_title('SV vs Pressure', fontsize=14)
 ax.tick_params(axis='both', which='major', labelsize=12)
 ax_sv.grid(True)
 ax_sv.legend(fontsize=9)
+
+plt.tight_layout()
+plt.savefig('SC_SV_vs_Pressure.jpg', dpi=300, bbox_inches='tight')
 
 #%%
 
@@ -344,9 +346,9 @@ for idx_p, (p, y_vals) in enumerate(integrales_por_presion.items()):
                  markersize = 12)
 
 # Etiquetas y estilo
-ax2.set_title('Integrals vs N₂ concentration', fontsize=20)
-ax2.set_xlabel('Concentration of N₂ (%)', fontsize=20)
-ax2.set_ylabel(r'Relative Yield', fontsize=20)
+ax2.set_title(r'N$_2$ scintillation yield relative to Ar/CF4 (95/5)', fontsize=20)
+ax2.set_xlabel(r'Concentration of N$_2$ (%)', fontsize=20)
+ax2.set_ylabel(r'N$_2$ relative yield', fontsize=20)
 ax2.set_ylim(0.04)
 
 ax2.tick_params(axis='both', which='major', labelsize=22)
@@ -354,8 +356,9 @@ ax2.grid(True, which='both')
 ax2.legend(fontsize=20, title='Pressure', title_fontsize=20)
 
 # Ajustar y mostrar
+
 plt.tight_layout()
-plt.savefig('SC_SV_vs_Pressure.jpg', dpi=300, bbox_inches='tight')
+plt.savefig('C.jpg', dpi=300, bbox_inches='tight')
 plt.show(block=False)
 plt.pause(0.1)
 input("Presiona ENTER para cerrar la figura...")

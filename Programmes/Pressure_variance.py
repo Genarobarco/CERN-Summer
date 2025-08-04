@@ -24,7 +24,7 @@ integration_limits_ref = [500, 750]
 
 # -------- element and concentration ------------s
 element_mix = 'N2'
-Concentracion_N2 = 100
+Concentracion_N2 = 0.1
 
 
 
@@ -250,13 +250,6 @@ ax.tick_params(axis='both', which='major', labelsize=13)
 ax.grid()
 ax.legend(fontsize=13, title='Pressures', title_fontsize=12)
 
-sm = cm.ScalarMappable(cmap=colormap, norm=norm)
-sm.set_array([])
-
-# cbar = fig.colorbar(sm, ax=ax)
-# cbar.set_label('Pressure (bar)', fontsize=13)
-# cbar.ax.tick_params(labelsize=12)
-
 plt.savefig(f'Ar{Element}_{Ar_Concentration}{Concentracion}_PV_Norms.jpg', format='jpg', 
             bbox_inches='tight', dpi = 300) 
 
@@ -282,7 +275,7 @@ for i in range(len(pressures)):
 ax1.fill_between(df_ref['Lambda'],
                  df_ref['Phe']- df_ref['Err_Phe'],
                  df_ref['Phe']+ df_ref['Err_Phe'],
-                 label=f'Reference - {Current_candela} A',
+                 label=f'Ar/CF4 95/5',
                  color='magenta', alpha=0.5)
 
 ax1.set_xlabel(r'$\lambda$ (nm)', fontsize=15)
@@ -292,17 +285,10 @@ ax1.grid()
 ax1.legend(fontsize=10, title='Pressures', title_fontsize=11)
 ax1.set_title(f'Ar/{Element} {Ar_Concentration}/{Concentracion}', fontsize=14)
 
-# Colorbar para el primer gráfico
-sm = cm.ScalarMappable(cmap=colormap, norm=norm)
-sm.set_array([])
-cbar = fig.colorbar(sm, ax=ax1)
-cbar.set_label('Pressure (bar)', fontsize=13)
-cbar.ax.tick_params(labelsize=12)
-
 # --- Segundo gráfico: integrales ---
 
 ax2.errorbar(df['Pressures'], df['integrals'],
-                yerr=df['Err_int'], xerr=err_pressure,
+                yerr=df['integrals']*0.15, xerr=err_pressure,
                 fmt='o-', label=f'{100 - Concentracion_N2}/{Concentracion_N2}',
                 color=color)
 
@@ -312,6 +298,39 @@ ax2.tick_params(axis='both', which='major', labelsize=11)
 ax2.grid()
 ax2.legend(fontsize=10, title='Ar/N2', title_fontsize=10)
 ax2.set_title('Integrated Spectra', fontsize=14)
+
+plt.tight_layout()
+plt.savefig(f'Ar{Element}_{Ar_Concentration}{Concentracion}_PV_Phe_integral.jpg',
+            format='jpg', bbox_inches='tight', dpi=300)
+
+
+norm = mcolors.Normalize(vmin=min(pressures), vmax=max(pressures))
+colormap = plt.colormaps['turbo']
+
+fig, ax1 = plt.subplots(figsize=(16, 9))
+
+# --- Primer gráfico: espectros ---
+for i in range(len(pressures)):
+    color = colormap(norm(pressures[i]))
+    ax1.plot(data[i]['Lambda'], data[i]['Phe'], color=color, linewidth=0.5)
+    ax1.fill_between(data[i]['Lambda'],
+                     data[i]['Phe'] - data[i]['Err_Phe'],
+                     data[i]['Phe'] + data[i]['Err_Phe'],
+                     label=f'{pressures[i]} bar',
+                     color=color, alpha=0.5)
+
+ax1.fill_between(df_ref['Lambda'],
+                 df_ref['Phe']- df_ref['Err_Phe'],
+                 df_ref['Phe']+ df_ref['Err_Phe'],
+                 label=f'Ar/CF4 95/5',
+                 color='magenta', alpha=0.5)
+
+ax1.set_xlabel(r'wavelength (nm)', fontsize=15)
+ax1.set_ylabel(r'Photons / electrons (A.U)', fontsize=15)
+ax1.tick_params(axis='both', which='major', labelsize=13)
+ax1.grid()
+ax1.legend(fontsize=10, title='Pressures', title_fontsize=11)
+ax1.set_title(f'Ar/{Element} {Ar_Concentration}/{Concentracion}', fontsize=14)
 
 plt.tight_layout()
 plt.savefig(f'Ar{Element}_{Ar_Concentration}{Concentracion}_PV_Phe.jpg',
