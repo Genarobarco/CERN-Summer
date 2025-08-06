@@ -24,9 +24,7 @@ integration_limits_ref = [500, 750]
 
 # -------- element and concentration ------------s
 element_mix = 'N2'
-Concentracion_N2 = 0.1
-
-
+Concentracion_N2 = 50
 
 if '.' in str(Concentracion_N2):
    Concentration_mix = str(Concentracion_N2).replace('.','-')
@@ -37,11 +35,10 @@ else:
 # -------- Paths ------------
 
 base_path = rf'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\{element_mix}\{Concentration_mix}'
-pattern = os.path.join(base_path, '*_bar', '40kV40mA', '0V')
+pattern = os.path.join(base_path, '*_bar', '40kV40mA', '0V_withNO')
 
 rutas = glob(pattern)
 rutas_ordenadas = sorted(rutas, key=extraer_presion)
-
 
 # ------ Reference --------
 
@@ -137,13 +134,13 @@ for ValPressureIndex in range(len(pressures)):
     integrales.append(sum)
     err_integral.append(err)
 
-df = pd.DataFrame({
+df_integrals = pd.DataFrame({
         'Pressures': pressures,
         'integrals': integrales, 
         'Err_int': err_integral
         })
 
-data_integral.append(df)
+print(df_integrals)
 
 #%%
 fig, ax1 = plt.subplots(figsize=(12, 8))
@@ -287,8 +284,8 @@ ax1.set_title(f'Ar/{Element} {Ar_Concentration}/{Concentracion}', fontsize=14)
 
 # --- Segundo gráfico: integrales ---
 
-ax2.errorbar(df['Pressures'], df['integrals'],
-                yerr=df['integrals']*0.15, xerr=err_pressure,
+ax2.errorbar(df_integrals['Pressures'], df_integrals['integrals'],
+                yerr=df_integrals['integrals']*0.15, xerr=err_pressure,
                 fmt='o-', label=f'{100 - Concentracion_N2}/{Concentracion_N2}',
                 color=color)
 

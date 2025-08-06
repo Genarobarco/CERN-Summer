@@ -45,7 +45,7 @@ integration_limits = [300,450] #nm
 
 
 path_NO = rf'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\{element_mix}\{Concentration_mix}'
-pattern_NO = os.path.join(path_NO, '*_bar', '40kV40mA', 'max_collection')
+pattern_NO = os.path.join(path_NO, '*_bar', '40kV40mA', '0V_withNO')
 
 rutas_NO = glob(pattern_NO)
 NO_ruts = sorted(rutas_NO, key=extraer_presion)
@@ -98,8 +98,8 @@ axs[1, 2] = ind_ax  # Asignar el nuevo eje
 # Aplanar para facilidad
 axs = axs.flatten()
 
-color = 'dodgerblue'
-color_NO = 'orange'
+color = 'crimson'
+color_NO = 'navy'
 
 # Graficar los primeros 5 datasets (índices 0 a 4) con ejes compartidos
 for i in range(5):
@@ -107,13 +107,13 @@ for i in range(5):
     df = data[i]
     df_NO = data_NO[i]
 
-    ax.plot(df['Lambda'], df['Phe'], color=color, label='0V')
+    ax.plot(df['Lambda'], df['Phe'], color=color, label='clean')
     ax.fill_between(df['Lambda'], 
                     df['Phe'] - df['Err_Phe'], 
                     df['Phe'] + df['Err_Phe'], 
                     color=color, alpha=0.3)
     
-    ax.plot(df_NO['Lambda'], df_NO['Phe'], color=color_NO, label='Max Collection')
+    ax.plot(df_NO['Lambda'], df_NO['Phe'], color=color_NO, label='Contaminated')
     ax.fill_between(df_NO['Lambda'], 
                     df_NO['Phe'] - df_NO['Err_Phe'], 
                     df_NO['Phe'] + df_NO['Err_Phe'], 

@@ -34,7 +34,7 @@ def cargar_datos(rutas):
     return datos, presiones
 
 element_mix = 'N2'
-Concentration_mix = 100
+Concentration_mix = 20
 
 yield_factor = .15
 err_lambda = 1 #nm
@@ -45,7 +45,7 @@ integration_limits = [300,450] #nm
 
 
 path_NO = rf'C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\{element_mix}\{Concentration_mix}'
-pattern_NO = os.path.join(path_NO, '5_bar', '40kV40mA', '0V_withNO')
+pattern_NO = os.path.join(path_NO, '5_bar', '40kV40mA', 'max_collection')
 
 rutas_NO = glob(pattern_NO)
 NO_ruts = sorted(rutas_NO, key=extraer_presion)
@@ -68,17 +68,17 @@ color_dirty = 'navy'
 
 plt.figure(figsize=(16, 9))
 
-plt.plot(df['Lambda'], df['Phe'], color=color_clean, label='BakeOut and Pumped')
-plt.fill_between(df['Lambda'], 
-                df['Phe'] - df['Err_Phe'], 
-                df['Phe'] + df['Err_Phe'], 
-                color=color_clean, alpha=0.3)
+plt.plot(df['Lambda'], df['Phe'] - df_NO['Phe'], color=color_clean, label='BakeOut and Pumped')
+# plt.fill_between(df['Lambda'], 
+#                 df['Phe'] - df['Err_Phe'], 
+#                 df['Phe'] + df['Err_Phe'], 
+#                 color=color_clean, alpha=0.3)
 
-plt.plot(df_NO['Lambda'], df_NO['Phe'], color=color_dirty, label='Plastic Pipe Conected')
-plt.fill_between(df_NO['Lambda'], 
-                df_NO['Phe'] - df_NO['Err_Phe'], 
-                df_NO['Phe'] + df_NO['Err_Phe'], 
-                color=color_dirty, alpha=0.3)
+# plt.plot(df_NO['Lambda'], df_NO['Phe'], color=color_dirty, label='Plastic Pipe Conected')
+# plt.fill_between(df_NO['Lambda'], 
+#                 df_NO['Phe'] - df_NO['Err_Phe'], 
+#                 df_NO['Phe'] + df_NO['Err_Phe'], 
+#                 color=color_dirty, alpha=0.3)
 
 # plt.set_ylim(-0.1,20)
 plt.grid(True)

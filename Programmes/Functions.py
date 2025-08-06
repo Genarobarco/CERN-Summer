@@ -11,8 +11,6 @@ from scipy.stats import norm
 from scipy.optimize import curve_fit
 from scipy.special import factorial
 
-excel_path = r"C:\Users\genar\Documents\CERN Summer 2025\Carpeta para CERNbox\Spectra_2025_Pablo_Raul_Genaro\Whole_Data.xlsx"
-
 def extraer_presion(ruta):
     """Extrae la presión en float desde la ruta."""
     partes = ruta.split(os.sep)
@@ -332,7 +330,7 @@ def Sep_rut(Ruta, Mother_folder = 'Spectra_2025_Pablo_Raul_Genaro'):
 
   return Element, Concentracion, Presion, Volt_Amp, Ar_Concentration
 
-def Excel_writter(A, Ac, B, Bc, Pressure, VA, SV, SC, Current_3kV):
+def Excel_writter(excel_path, A, Ac, B, Bc, Pressure, VA, SV, SC, Current_3kV):
 
   df = pd.read_excel(excel_path)
 
@@ -368,22 +366,6 @@ def Excel_writter(A, Ac, B, Bc, Pressure, VA, SV, SC, Current_3kV):
 
   # Save back to Excel
   df.to_excel(excel_path, index=False)
-
-def Excel_value(filters, target_column):
-
-  df = pd.read_excel(excel_path)
-  
-  mask = pd.Series(True, index=df.index)
-  for col, val in filters.items():
-      mask &= (df[col] == val)
-  
-  filtered_df = df[mask]
-  
-  if filtered_df.empty:
-      print("No match found with the given filters.")
-      return None
-  
-  return filtered_df[target_column].values[0]
 
 def Excel_value_WP(Path, filters, target_column):
 
